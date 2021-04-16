@@ -1,0 +1,32 @@
+# Create environment: conda env create --file environment.yml
+# Activate environment: conda activate master
+# Deactivate environment: conda deactivate
+# To remove environment: conda remove --name master --all
+# To verify that the environment was removed: conda info --envs
+
+name: pylfi-dev
+channels:
+  - conda-forge
+  - defaults
+  - pytorch
+dependencies:
+  - python>3.8
+  - pip
+  - numpy
+  - matplotlib
+  - scipy
+  - pandas
+  - seaborn
+  - numba
+  - cython
+  - pytest
+  - autopep8
+  - isort
+  - yapf
+  - scikit-learn
+  - pytorch
+  - torchvision
+  - theano
+  - pymc3
+  - nest-simulator=*=mpi_openmpi*
+  - lfpy
