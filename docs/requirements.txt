@@ -1,0 +1,15 @@
+Sphinx
+Pallets-Sphinx-Themes
+sphinxcontrib-log-cabinet
+sphinxcontrib-napoleon
+sphinx-issues
+packaging
+sphinx_rtd_theme
+readthedocs-sphinx-search
+numpydoc
+sphinx-gallery
+sphinx-prompt
+https://github.com/AaltoSciComp/sphinx_rtd_theme_ext_color_contrast/archive/master.zip
+pydata-sphinx-theme
+matplotlib
+numpy 
