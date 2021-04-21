@@ -63,13 +63,16 @@ class RejectionABC(ABCBase):
 
         n_sims = num_simulations
 
-        journal = Journal()  # journal instance
-        journal._start_journal()
+        # initialize journal
+        journal = Journal()
+        journal._start_journal(log, self._simulator, self._priors,
+                               _inference_scheme, self._distance, num_simulations, epsilon)
 
+        '''
         journal._add_config(self._simulator, _inference_scheme,
                             self._distance, num_simulations, epsilon)
         journal._add_parameter_names(self._priors)
-
+        '''
         # draw thetas from priors
         thetas = np.array([prior.rvs(size=(n_sims,))
                            for prior in self._priors])
@@ -102,18 +105,16 @@ class RejectionABC(ABCBase):
         for i, thetas in enumerate(np.stack(thetas_accepted, axis=-1)):
             journal._add_accepted_parameters(thetas)
             journal._add_distance(dist_accepted[i])
+            journal._add_raw_distance(sims_accepted[i] - self._obs)
             journal._add_sumstat(sims_accepted[i])
 
-        journal._add_sampler_summary(n_sims, num_accepted)
-
+        #journal._sampler_summary(n_sims, num_accepted)
         if log:
-            self.logger.info(f"Accepted {num_accepted} of {n_sims} simulations. " +
-                             f"Acceptance ratio: {journal.get_acceptance_ratio:.4f}")
+            self.logger.info("Sampling results written to journal.")
+            self.logger.info(
+                f"Accepted {num_accepted} of {n_sims} simulations.")
 
-        if lra:
-            # if log:
-            # self.logger.info("Running Linear regression adjustment.")
-            # journal.run_lra()
-            pass
+        # if num_accepted < ... : raise RuntimeError eller custom InferenceError
+        journal._process_inference(n_sims, num_accepted, lra)
 
         return journal
