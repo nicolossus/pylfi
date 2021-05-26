@@ -35,13 +35,7 @@ def setup_logger(name):
 
 
 class ABCBase(metaclass=ABCMeta):
-    def __init__(
-        self,
-        observation,
-        simulator: Callable,
-        priors,
-        distance: Union[str, Callable] = "l2"
-    ) -> None:
+    def __init__(self, observation, simulator, priors, distance, rng, seed):
         """
         simulator : callable
             simulator model
@@ -56,6 +50,8 @@ class ABCBase(metaclass=ABCMeta):
         self._obs = observation
         self._simulator = simulator
         self._priors = priors
+        self._rng = rng
+        self._seed = seed
 
         # Select distance function.
         if callable(distance):
