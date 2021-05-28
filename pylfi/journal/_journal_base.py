@@ -7,6 +7,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from matplotlib import gridspec
 from pylfi.densest import histogram
@@ -24,7 +25,7 @@ class JournalInternal:
 
     def __init__(self):
         # dict of accepted parameters; key=param_name, value=accepted_samples
-        self.accepted_parameters = {}
+        #self.accepted_parameters = {}
         # list of parameter names (the 'name' kw from Prior object)
         self.parameter_names = []
         # list of parameter LaTeX names (the 'tex' kw from Prior object)
@@ -32,17 +33,21 @@ class JournalInternal:
         # list of labels (param names) for plots; uses 'name' if 'tex' is None
         self.labels = []
         # list for storing distances of accepted samples
-        self.distances = []
-        self.raw_distances = []
+        #self.distances = []
+        #self.rel_distances = []
         # list for storing summary statistic values of accepted samples
-        self.sumstats = []
+        #self.sumstats = []
         # for tallying the number of inferred parameters
         self._n_parameters = 0
 
         # dict for storing inference configuration
         self.configuration = {}
         # dict for summarizing inference run
-        self.sampler_summary = {}
+        self._sampler_summary = {}
+        # dict for storing sampler results
+        self._sampler_results = {}
+
+        self._sampler_stats = {}
 
         # bool used to limit access if journal has not been written to
         self._journal_started = False
@@ -64,6 +69,7 @@ class JournalInternal:
         self._log = log
         if self._log:
             self.logger = setup_logger(self.__class__.__name__)
+            self.logger.info("Create journal.")
 
         # store inference configuration
         self.configuration["Simulator model"] = simulator.__name__
@@ -77,7 +83,8 @@ class JournalInternal:
             name = parameter.name
             tex = parameter.tex
             self.parameter_names.append(name)
-            self.accepted_parameters[name] = []
+            self._sampler_results[name] = []
+            self._sampler_stats[name] = []
             self.parameter_names_tex.append(tex)
             self._n_parameters += 1
             if tex is None:
@@ -85,47 +92,41 @@ class JournalInternal:
             else:
                 self.labels.append(tex)
 
+        self._sampler_results["epsilon"] = []
+        self._sampler_results["distance"] = []
+        self._sampler_results["relative distance"] = []
+        self._sampler_results["summary stats"] = []
+
+    def _processing_msg(self):
+        self.logger.info("Processing sampler results.")
+
+    def _done_msg(self):
+        self.logger.info("Ready for post-sampling processing and analysis.")
+        self.logger.info("For details and tips, run 'journal.help'.")
+
     def _add_accepted_parameters(self, thetas):
         """Store accepted parameters."""
         for parameter_name, theta in zip(self.parameter_names, thetas):
-            self.accepted_parameters[parameter_name].append(theta)
+            # self.accepted_parameters[parameter_name].append(theta)
+            self._sampler_results[parameter_name].append(theta)
 
     def _add_distance(self, distance):
         """Store calculated distance corresponding to accepted parameters."""
-        self.distances.append(distance)
+        self._sampler_results["distance"].append(distance)
 
-    def _add_raw_distance(self, distance):
+    def _add_rel_distance(self, rel_distance):
         """Store calculated distance corresponding to accepted parameters."""
-        self.raw_distances.append(distance)
+        self._sampler_results["relative distance"].append(rel_distance)
 
-    def _add_sumstat(self, sumstat):
+    def _add_threshold(self, epsilon):
+        """Store the threshold value corresponding to accepted parameters."""
+        self._sampler_results["epsilon"].append(epsilon)
+
+    def _add_sumstats(self, sumstats):
         """Store summary statistics corresponding to accepted parameters."""
-        self.sumstats.append(sumstat)
+        self._sampler_results["summary stats"].append(sumstats)
 
-    '''
-    def _sampler_summary(self, number_of_simulations, accepted_count):
-        """Summarize sampler.
-
-        To be called at the end of inference scheme in order to
-            * store the number of simulations
-            * store the number of accepted parameters
-            * calculate the acceptance ratio
-
-        TODO:
-        - calculate sample mean, std, and similar
-        - if lra, also for adjusted
-        - KDE handling not decided yet
-        """
-        accept_ratio = accepted_count / number_of_simulations
-        # number of parameters estimated
-        self.sampler_summary["Number of simulations"] = number_of_simulations
-        self.sampler_summary["Number of accepted simulations"] = accepted_count
-        self.sampler_summary["Acceptance ratio"] = accept_ratio
-        # posterior means
-        # uncertainty
-        '''
-
-    def _process_inference(self, number_of_simulations, accepted_count, lra):
+    def _process_inference(self, n_sims, n_samples, time):
         """Post-sampling summary processing and adjustment.
 
         To be called at the end of inference scheme in order to
@@ -140,25 +141,38 @@ class JournalInternal:
         """
         # args: lra, kde params
         # move all post-sampling into here
-
+        '''
         if self._log:
             self.logger.info(f"Initializing post-sampling processing.")
+        '''
+
+        self._sampler_results_df = pd.DataFrame(self._sampler_results)
 
         # transform accepted samples into 1D arrays
-        *data, = self._params_as_arrays()
-        self._params_unadj = data
+        #*data, = self._params_as_arrays()
+        #self._params_unadj = data
 
-        if lra:
-            # if log:
-            # self.logger.info("Running Linear regression adjustment.")
-            # journal.run_lra()
-            pass
+        accept_ratio = n_samples / n_sims
+        self._sampler_summary["Simulations"] = n_sims
+        self._sampler_summary["Posterior samples"] = n_samples
+        self._sampler_summary["Acceptance ratio"] = accept_ratio
+        self._sampler_summary["Wall time (s)"] = time
 
-        #
-        accept_ratio = accepted_count / number_of_simulations
-        self.sampler_summary["Number of simulations"] = number_of_simulations
-        self.sampler_summary["Number of accepted simulations"] = accepted_count
-        self.sampler_summary["Acceptance ratio"] = accept_ratio
+        self._sampler_summary_df = pd.DataFrame(self._sampler_summary,
+                                                index=[0])
+
+        for param_name in self.parameter_names:
+            self._sampler_stats[param_name].append(
+                self._sampler_results_df[param_name].mean())
+            self._sampler_stats[param_name].append(
+                self._sampler_results_df[param_name].median())
+            self._sampler_stats[param_name].append(
+                self._sampler_results_df[param_name].var())
+            self._sampler_stats[param_name].append(
+                self._sampler_results_df[param_name].std())
+
+        self._sampler_stats_df = pd.DataFrame(self._sampler_stats,
+                                              index=["mean", "median", "var", "std"])
         # posterior means
         # uncertainty
 
@@ -171,7 +185,8 @@ class JournalInternal:
                 samples[name], float).ndim > 1 else np.asarray(samples[name], float) for name in self.parameter_names)
         else:
             samples = np.asarray(samples[self.parameter_names[0]], float)
-            params = samples.squeeze() if samples.ndim > 1 else [samples]
+            params = samples.squeeze(
+            ) if samples.ndim > 1 else np.array([samples])
         return params
 
     def params_as_arrays(self):
@@ -184,6 +199,7 @@ class JournalInternal:
         return self._params_unadj
 
     def _set_point_estimate_statistic(self, statistic):
+        # add mode
         if statistic == 'mean':
             return np.mean
         elif statistic == 'median':

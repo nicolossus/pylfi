@@ -8,7 +8,6 @@ name: pylfi-dev
 channels:
   - conda-forge
   - defaults
-  - pytorch
 dependencies:
   - python>3.8
   - pip
@@ -24,9 +23,12 @@ dependencies:
   - isort
   - yapf
   - scikit-learn
-  - pytorch
-  - torchvision
+  - jupyter
+  - jupyter_contrib_nbextensions
+  - cython
+  - glmnet
   - theano
+  - pygpu
   - pymc3
-  - nest-simulator=*=mpi_openmpi*
-  - lfpy
+  #- nest-simulator=*=mpi_openmpi*
+  #- lfpy

@@ -56,7 +56,7 @@ class Prior(metaclass=ABCMeta):
         with seed.
     """
 
-    def __init__(self, shape, loc, scale, name, tex, distr_name, rng, seed):
+    def __init__(self, shape, loc, scale, name, tex, distr_name):
         """Constructor that must be overwritten by the sub-class."""
 
         self.distr_name = distr_name
@@ -64,8 +64,6 @@ class Prior(metaclass=ABCMeta):
         self.shape = shape
         self.loc = loc
         self.scale = scale
-        self.rng = rng
-        self.seed = seed
 
         if name is None:
             msg = ("'name' of random variate must be provided as str")
@@ -86,7 +84,7 @@ class Prior(metaclass=ABCMeta):
             raise TypeError(msg)
 
     @abstractmethod
-    def rvs(self, size=None):
+    def rvs(self, size, rng, seed):
         r"""To be overwritten by sub-class; draw random variates from
         distribution.
         """
@@ -105,7 +103,7 @@ class Prior(metaclass=ABCMeta):
 class ContinuousPrior(Prior):
     r"""Base class for continuous priors"""
 
-    def __init__(self, shape, loc, scale, name, tex, distr_name, rng, seed):
+    def __init__(self, shape, loc, scale, name, tex, distr_name):
         """Constructor for continuous prior classes.
 
         Sub-classes must provide the following arguments:
@@ -140,12 +138,10 @@ class ContinuousPrior(Prior):
             scale=scale,
             name=name,
             tex=tex,
-            distr_name=distr_name,
-            rng=rng,
-            seed=seed
+            distr_name=distr_name
         )
 
-    def rvs(self, size=None):
+    def rvs(self, size=None, rng=np.random.RandomState, seed=None):
         r"""Draw random variates from distribution.
 
         Parameters
@@ -163,7 +159,7 @@ class ContinuousPrior(Prior):
                              loc=self.loc,
                              scale=self.scale,
                              size=size,
-                             random_state=self.rng(seed=self.seed)
+                             random_state=rng(seed=seed)
                              )
         return rvs
 
@@ -212,7 +208,7 @@ class ContinuousPrior(Prior):
         fig, ax = plt.subplots(1, 1,
                                figsize=(8, 6),
                                dpi=dpi)
-        ax.plot(x, pdf, label=f'{self.__class__.__name__} PDF')
+        ax.plot(x, pdf, label=f'{self.__class__.__name__} pdf')
         ax.fill_between(x, pdf, alpha=0.5, facecolor='lightblue')
         ax.set_ylabel('Density')
         ax.set_xlabel(x_handle)
@@ -227,7 +223,7 @@ class ContinuousPrior(Prior):
 class DiscretePrior(Prior):
     r"""Base class for discrete priors"""
 
-    def __init__(self, shape, loc, name, tex, distr_name, rng, seed):
+    def __init__(self, shape, loc, name, tex, distr_name):
         r"""Constructor for discrete prior classes.
 
         Sub-classes must provide the following arguments:
@@ -260,12 +256,10 @@ class DiscretePrior(Prior):
             scale=None,
             name=name,
             tex=tex,
-            distr_name=distr_name,
-            rng=rng,
-            seed=seed
+            distr_name=distr_name
         )
 
-    def rvs(self, size=None):
+    def rvs(self, size=None, rng=np.random.RandomState, seed=None):
         r"""Draw random variates from distribution.
 
         Parameters
@@ -282,7 +276,7 @@ class DiscretePrior(Prior):
         rvs = self.distr.rvs(*self.shape,
                              loc=self.loc,
                              size=size,
-                             random_state=self.rng(seed=self.seed)
+                             random_state=rng(seed=seed)
                              )
         return rvs
 

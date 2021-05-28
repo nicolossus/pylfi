@@ -22,6 +22,7 @@ class Journal(JournalInternal):
     def __init__(self):
         super().__init__()
 
+    '''
     @property
     def get_distances(self):
         check_journal_status(self._journal_started)
@@ -31,6 +32,22 @@ class Journal(JournalInternal):
     def get_raw_distances(self):
         check_journal_status(self._journal_started)
         return self.raw_distances
+    '''
+
+    @property
+    def sampler_results(self):
+        check_journal_status(self._journal_started)
+        return self._sampler_results_df
+
+    @property
+    def sampler_summary(self):
+        check_journal_status(self._journal_started)
+        return self._sampler_summary_df
+
+    @property
+    def sampler_stats(self):
+        check_journal_status(self._journal_started)
+        return self._sampler_stats_df
 
     @property
     def get_number_of_simulations(self):

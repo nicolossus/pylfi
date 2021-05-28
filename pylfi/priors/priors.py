@@ -90,9 +90,7 @@ class Uniform(ContinuousPrior):
         loc=0.0,
         scale=1.0,
         name=None,
-        tex=None,
-        rng=np.random.RandomState,
-        seed=None
+        tex=None
     ):
         super().__init__(
             shape=(),
@@ -101,8 +99,6 @@ class Uniform(ContinuousPrior):
             name=name,
             tex=tex,
             distr_name='uniform',
-            rng=rng,
-            seed=seed
         )
 
 
@@ -184,9 +180,7 @@ class Normal(ContinuousPrior):
         loc=0.0,
         scale=1.0,
         name=None,
-        tex=None,
-        rng=np.random.RandomState,
-        seed=None
+        tex=None
     ):
         super().__init__(
             shape=(),
@@ -194,9 +188,7 @@ class Normal(ContinuousPrior):
             scale=scale,
             name=name,
             tex=tex,
-            distr_name='norm',
-            rng=rng,
-            seed=seed
+            distr_name='norm'
         )
 
 
@@ -313,9 +305,7 @@ class Beta(ContinuousPrior):
         loc=0.0,
         scale=1.0,
         name=None,
-        tex=None,
-        rng=np.random.RandomState,
-        seed=None
+        tex=None
     ):
         super().__init__(
             shape=(a, b),
@@ -323,9 +313,7 @@ class Beta(ContinuousPrior):
             scale=scale,
             name=name,
             tex=tex,
-            distr_name='beta',
-            rng=rng,
-            seed=seed
+            distr_name='beta'
         )
 
 
@@ -405,9 +393,7 @@ class LogNormal(ContinuousPrior):
         loc=0.0,
         scale=1.0,
         name=None,
-        tex=None,
-        rng=np.random.RandomState,
-        seed=None
+        tex=None
     ):
         super().__init__(
             shape=(s,),
@@ -415,9 +401,7 @@ class LogNormal(ContinuousPrior):
             scale=scale,
             name=name,
             tex=tex,
-            distr_name='lognorm',
-            rng=rng,
-            seed=seed
+            distr_name='lognorm'
         )
 
 
@@ -473,9 +457,7 @@ class Exponential(ContinuousPrior):
         loc=0.0,
         scale=1.0,
         name=None,
-        tex=None,
-        rng=np.random.RandomState,
-        seed=None
+        tex=None
     ):
         super().__init__(
             shape=(),
@@ -483,9 +465,7 @@ class Exponential(ContinuousPrior):
             scale=scale,
             name=name,
             tex=tex,
-            distr_name='expon',
-            rng=rng,
-            seed=seed
+            distr_name='expon'
         )
 
 
@@ -501,9 +481,7 @@ class Gamma(ContinuousPrior):
         loc=0.0,
         scale=1.0,
         name=None,
-        tex=None,
-        rng=np.random.RandomState,
-        seed=None
+        tex=None
     ):
         super().__init__(
             shape=(a,),
@@ -511,9 +489,7 @@ class Gamma(ContinuousPrior):
             scale=scale,
             name=name,
             tex=tex,
-            distr_name='gamma',
-            rng=rng,
-            seed=seed
+            distr_name='gamma'
         )
 
 
@@ -529,9 +505,7 @@ class InvGamma(ContinuousPrior):
         loc=0.0,
         scale=1.0,
         name=None,
-        tex=None,
-        rng=np.random.RandomState,
-        seed=None
+        tex=None
     ):
         super().__init__(
             shape=(a,),
@@ -539,9 +513,7 @@ class InvGamma(ContinuousPrior):
             scale=scale,
             name=name,
             tex=tex,
-            distr_name='invgamma',
-            rng=rng,
-            seed=seed
+            distr_name='invgamma'
         )
 
 
@@ -598,18 +570,14 @@ class Randint(DiscretePrior):
         high,
         loc=0.0,
         name=None,
-        tex=None,
-        rng=np.random.RandomState,
-        seed=None
+        tex=None
     ):
         super().__init__(
             shape=(low, high),
             loc=loc,
             name=name,
             tex=tex,
-            distr_name='randint',
-            rng=rng,
-            seed=seed
+            distr_name='randint'
         )
 
 
@@ -668,18 +636,14 @@ class Binomial(DiscretePrior):
         p,
         loc=0.0,
         name=None,
-        tex=None,
-        rng=np.random.RandomState,
-        seed=None
+        tex=None
     ):
         super().__init__(
             shape=(n, p),
             loc=loc,
             name=name,
             tex=tex,
-            distr_name='binom',
-            rng=rng,
-            seed=seed
+            distr_name='binom'
         )
 
 
@@ -693,18 +657,14 @@ class NegativeBinomial(DiscretePrior):
         p,
         loc=0.0,
         name=None,
-        tex=None,
-        rng=np.random.RandomState,
-        seed=None
+        tex=None
     ):
         super().__init__(
             shape=(n, p),
             loc=loc,
             name=name,
             tex=tex,
-            distr_name='nbinom',
-            rng=rng,
-            seed=seed
+            distr_name='nbinom'
         )
 
 
@@ -764,18 +724,14 @@ class Poisson(DiscretePrior):
         mu,
         loc=0.0,
         name=None,
-        tex=None,
-        rng=np.random.RandomState,
-        seed=None
+        tex=None
     ):
         super().__init__(
             shape=(mu,),
             loc=loc,
             name=name,
             tex=tex,
-            distr_name='poisson',
-            rng=rng,
-            seed=seed
+            distr_name='poisson'
         )
 
 
