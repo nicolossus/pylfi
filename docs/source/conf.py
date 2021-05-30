@@ -16,7 +16,7 @@ import sphinx_rtd_theme
 from matplotlib.sphinxext import plot_directive
 
 # Get version
-exec(open(os.path.join("..", "..", "pylfi", "_version.py")).read())
+exec(open(os.path.join("..", "..", "pylfi", "__version__.py")).read())
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
