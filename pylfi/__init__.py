@@ -1,4 +1,4 @@
-from ._version import __version__
+from .__version__ import __version__
 from .distances import *
 from .inferences import *
 from .journal import *
