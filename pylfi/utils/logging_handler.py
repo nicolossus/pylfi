@@ -9,7 +9,7 @@ import colorlog
 def setup_logger(name):
     """Return a logger with a default ColoredFormatter."""
     formatter = colorlog.ColoredFormatter(
-        "%(log_color)s%(levelname)s:%(name)-8s%(reset)s %(blue)s%(message)s",
+        "%(log_color)s%(levelname)s:%(name)-8s%(reset)s %(purple)s%(message)s",
         datefmt=None,
         reset=True,
         log_colors={
