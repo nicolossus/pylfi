@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -7,160 +8,124 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from matplotlib import gridspec
+from pylfi.utils import setup_logger
 
 from ._checks import *
 from ._journal_base import JournalInternal
 
-#from ._plotting import add_densityplot, add_histplot, add_rugplot
 
-# TODO: store in pandas dataframe
-
-
-class Journal(JournalInternal):
+class Journal:
 
     def __init__(self):
-        super().__init__()
+        # list of parameter names (the 'name' kw from Prior object)
+        self.parameter_names = []
+        # list of parameter LaTeX names (the 'tex' kw from Prior object)
+        self.parameter_names_tex = []
+        # list of labels (param names) for plots; uses 'name' if 'tex' is None
+        self.labels = []
+        # list for storing distances of accepted samples
+        #self.distances = []
+        #self.rel_distances = []
+        # list for storing summary statistic values of accepted samples
+        #self.sumstats = []
+        # for tallying the number of inferred parameters
+        self._n_parameters = 0
 
-    '''
-    @property
-    def get_distances(self):
-        check_journal_status(self._journal_started)
-        return self.distances
+        # dict for storing inference configuration
+        self.configuration = {}
+        # dict for summarizing inference run
+        self._sampler_summary = {}
+        # dict for storing sampler results
+        self._sampler_results = {}
+        self._posterior_samples = {}
 
-    @property
-    def get_raw_distances(self):
-        check_journal_status(self._journal_started)
-        return self.raw_distances
-    '''
+        self._sampler_stats = {}
 
-    @property
-    def sampler_results(self):
-        check_journal_status(self._journal_started)
-        return self._sampler_results_df
+        # bool used to limit access if journal has not been written to
+        self._journal_started = False
 
-    @property
-    def sampler_summary(self):
-        check_journal_status(self._journal_started)
-        return self._sampler_summary_df
+    def _write_to_journal(
+        self,
+        observation,
+        simulator,
+        stat_calc,
+        priors,
+        distance_metric,
+        inference_scheme,
+        n_samples,
+        n_simulations,
+        posterior_samples,
+        summary_stats,
+        distances,
+        epsilons,
+        log
+    ):
+        # journal is started
+        self._journal_started = True
+        self._log = log
 
-    @property
-    def sampler_stats(self):
-        check_journal_status(self._journal_started)
-        return self._sampler_stats_df
+        if self._log:
+            self.logger = setup_logger(self.__class__.__name__)
+            self.logger.info("Write to journal.")
 
-    @property
-    def get_number_of_simulations(self):
-        check_journal_status(self._journal_started)
-        return self.sampler_summary["Number of simulations"]
+        # initialize data structures
+        self._write_initialize(priors)
+        # write sampler results
+        self._write_results(posterior_samples,
+                            summary_stats,
+                            distances,
+                            epsilons)
 
-    @property
-    def get_number_of_accepted_simulations(self):
-        check_journal_status(self._journal_started)
-        return self.sampler_summary["Number of accepted simulations"]
+        self._sampler_results_df = pd.DataFrame(self._sampler_results)
+        self._posterior_samples_df = pd.DataFrame(self._posterior_samples)
 
-    @property
-    def get_acceptance_ratio(self):
-        check_journal_status(self._journal_started)
-        return self.sampler_summary["Acceptance ratio"]
+    def _write_initialize(self, priors):
+        """Extract parameter names and set up data structures"""
 
-    @property
-    def get_accepted_parameters(self):
-        return self.accepted_parameters
+        for parameter in priors:
+            name = parameter.name
+            tex = parameter.tex
+            self.parameter_names.append(name)
+            self._sampler_results[name] = None
+            self._posterior_samples[name] = None
+            self._sampler_stats[name] = None
+            self.parameter_names_tex.append(tex)
+            self._n_parameters += 1
+            if tex is None:
+                self.labels.append(name)
+            else:
+                self.labels.append(tex)
 
-    def histplot(self, bins=10, rug=False, point_estimate=None, true_parameter_values=None,
-                 path_to_save=None, show=True,
-                 plot_style=None, grid=None, figsize=None, dpi=120, textsize=None, usetex=False, **kwargs):
-        """Histplot
+    def _write_results(self, posterior_samples, summary_stats, distances, epsilons):
+        """Write sampler results to data structure"""
 
-        histogram(s) of sampled parameter(s)
+        for i, parameter_name in enumerate(self.parameter_names):
+            self._sampler_results[parameter_name] = posterior_samples[:, i]
+            self._posterior_samples[parameter_name] = posterior_samples[:, i]
 
-        point estimate : mean, median, mode, None
-
-        The Mode value is the value that appears the most number of times
-        The median value is the value in the middle, after you have sorted all the values
-        The mean value is the average value
-
-        figsize : tuple
-            Figure size. If None it will be defined automatically.
-        textsize: float
-            Text size scaling factor for labels, titles and lines.
-            If None it will be set to 'large'.
-        """
-
-        N = self._n_parameters
-        # run checks
-        check_journal_status(self._journal_started)
-
-        if point_estimate is not None:
-            check_point_estimate_input(point_estimate)
-            point_estimates = self._point_estimates()
-
-        is_plot_true_vals = False
-        if true_parameter_values is not None:
-            check_true_parameter_values(
-                self._n_parameters, true_parameter_values)
-            is_plot_true_vals = True
-
-        # get sampled parameters
-        sample_data = self.params_as_arrays()
-
-        self._set_plot_style(plot_style, textsize, usetex)
-        fig, gs = self._set_figure_layout(grid, figsize, dpi)
-
-        for index, data in enumerate(sample_data):
-            ax = fig.add_subplot(gs[index])
-            self._add_histplot(data, ax=ax, bins=bins,
-                               label='Accepted samples', **kwargs)
-            if rug:
-                self._add_rugplot(data, ax=ax)
-            if point_estimate is not None:
-                ax.axvline(point_estimates[index], color='b',
-                           ymax=0.3, label=f'Sample {point_estimate}')
-            if true_parameter_values is not None:
-                ax.axvline(true_parameter_values[index], color='r',
-                           ls='--', ymax=0.3, label='Groundtruth')
-            ax.set_xlabel(self.labels[index])
-            ax.set_ylabel('Density')
-            ax.set_title("Histogram of accepted " + self.labels[index])
-
-        handles, labels = plt.gca().get_legend_handles_labels()
-
-        # fix legend ordering
-        if all(e is None for e in [point_estimate, true_parameter_values]):
-            order = [0]
-        elif all(e is not None for e in [point_estimate, true_parameter_values]):
-            order = [2, 0, 1]
+        if summary_stats.ndim > 1:
+            for i in range(summary_stats.ndim):
+                self._sampler_results[f"sum_stat{i+1}"] = summary_stats[:, i]
         else:
-            order = [1, 0]
+            self._sampler_results["sum_stat"] = summary_stats
+        self._sampler_results["distance"] = distances
+        self._sampler_results["epsilon"] = epsilons
 
-        plt.legend([handles[idx] for idx in order],
-                   [labels[idx] for idx in order],
-                   loc='center left',
-                   bbox_to_anchor=(1.04, 0.5),
-                   fancybox=True,
-                   borderaxespad=0.1,
-                   ncol=1
-                   )
+    def _write_config(self, simulator, ):
+        """Store inference configuration"""
 
-        if path_to_save is not None:
-            fig.savefig(path_to_save, dpi=dpi)
-        if show:
-            plt.show()
+        self.configuration["Inference scheme"] = inference_scheme
+        self.configuration["Simulator model"] = simulator.__name__
+        # prior?
+        self.configuration["Distance metric"] = distance_metric.__name__
 
-    '''
-    def histplot(self, bins=10, rug=False, point_estimate='mean', show=True, dpi=120, path_to_save=None, true_parameter_values=None, **kwargs):
-        """
-        histogram(s) of sampled parameter(s)
-
-        point estimate : mean, median, mode, None
-
-        The Mode value is the value that appears the most number of times
-        The median value is the value in the middle, after you have sorted all the values
-        The mean value is the average value
-        """
+    def _create_idata(self):
         pass
-    '''
+
+    def _create_df(self):
+        pass
 
     def save(self, filename):
         """
@@ -179,3 +144,33 @@ class Journal(JournalInternal):
         with open(filename, 'rb') as input:
             journal = pickle.load(input)
         return journal
+
+    def get_simulator(self):
+        pass
+
+    def get_priors(self):
+        pass
+
+    def get_posterior(kernel='gaussian', bw='scott'):
+        # return kde of posterior array(s)
+        pass
+
+    def sample_posterior(n_samples, kernel='gaussian', bw='scott'):
+        # return n_samples from posterior kde
+        pass
+
+    def results_dict():
+        check_journal_status(self._journal_started)
+        return self._sampler_results
+
+    def results_frame(self):
+        check_journal_status(self._journal_started)
+        return self._sampler_results_df
+
+    def posterior_dict(self):
+        check_journal_status(self._journal_started)
+        return self._posterior_samples
+
+    def posterior_frame(self):
+        check_journal_status(self._journal_started)
+        return self._posterior_samples_df

@@ -7,6 +7,7 @@ from multiprocessing import RLock
 import numpy as np
 from pathos.pools import ProcessPool
 from pylfi.inferences import ABCBase
+from pylfi.journal import Journal
 from pylfi.utils import (advance_PRNG_state, check_and_set_jobs,
                          distribute_workload, generate_seed_sequence,
                          setup_logger)
@@ -15,19 +16,16 @@ from tqdm.auto import tqdm
 
 class RejABC(ABCBase):
 
-    def __init__(self, observation, simulator, priors, distance='l2',
-                 rng=np.random.RandomState, seed=None):
+    def __init__(self, observation, simulator, statistics_calculator, priors, distance_metric='l2', seed=None):
 
         super().__init__(
             observation=observation,
             simulator=simulator,
+            statistics_calculator=statistics_calculator,
             priors=priors,
-            distance=distance,
-            rng=rng,
+            distance_metric=distance_metric,
             seed=seed
         )
-
-        #self._n_sims = 0
 
     def sample(self, n_samples, epsilon=None, n_jobs=-1, log=False):
         """
@@ -76,8 +74,25 @@ class RejABC(ABCBase):
         epsilons = np.concatenate(epsilons, axis=0)
         n_sims = np.sum(n_sims)
 
+        journal = Journal()
+        journal._write_to_journal(
+            observation=self._obs_data,
+            simulator=self._simulator,
+            stat_calc=self._stat_calc,
+            priors=self._priors,
+            distance_metric=self._distance_metric,
+            inference_scheme=_inference_scheme,
+            n_samples=n_samples,
+            n_simulations=n_sims,
+            posterior_samples=samples,
+            summary_stats=sum_stats,
+            distances=distances,
+            epsilons=epsilons,
+            log=log)
+
         # return results
-        return samples, distances, sum_stats, epsilons, n_sims
+        # return samples, distances, sum_stats, epsilons, n_sims
+        return journal
 
     def _sample(self, n_samples, seed):
         """Sample n_samples from posterior."""
@@ -129,12 +144,13 @@ class RejABC(ABCBase):
             next_gen = advance_PRNG_state(seed, self._n_sims)
             thetas = [prior.rvs(seed=next_gen) for prior in self._priors]
             sim = self._simulator(*thetas)
+            sim_sumstat = self._stat_calc(sim)
             self._n_sims += 1
-            distance = self._distance(self._obs, sim)
+            distance = self._distance_metric(self._obs_sumstat, sim_sumstat)
             if distance <= self._epsilon:
                 sample = thetas
 
-        return sample, distance, sim, self._epsilon
+        return sample, distance, sim_sumstat, self._epsilon
 
 
 if __name__ == "__main__":
@@ -147,6 +163,7 @@ if __name__ == "__main__":
 
     # Task: infer variance parameter in zero-centered Gaussian model
     #
+    '''
     groundtruth = 2.0  # true variance
     observation = groundtruth
 
@@ -171,38 +188,27 @@ if __name__ == "__main__":
 
     # inference config
     n_samples = 1000
-    epsilon = 0.2
+    epsilon = 0.5
 
     # run inference
+    journal = sampler.sample(n_samples, epsilon=epsilon, n_jobs=-1, log=False)
+
+    # print(journal.results_frame())
+
+    posterior_df = journal.posterior_frame()
+    posterior_dict = journal.posterior_dict()
+    idata = az.convert_to_inference_data(posterior_dict)
+    print(idata)
+    # , var_names=["mu", "theta"], coords=coords, rope=(-1, 1))
+    az.plot_trace(idata)
+    # az.plot_posterior(idata)
+    plt.show()
+
+    # print(posterior_dict)
+    #sns.displot(posterior_df, kind="kde")
+    # plt.show()
     '''
-    results = sampler.sample(n_samples, epsilon=epsilon, n_jobs=2, log=False)
 
-    print("1 PARAMETER")
-    print(len(results))
-    print(results)
-
-    print()
-
-    print(results[0][0])
-    '''
-
-    samples, distances, sum_stats, epsilons, n_sims = sampler.sample(
-        n_samples, epsilon=epsilon, n_jobs=4, log=True)
-
-    print(len(samples))
-    # print(samples)
-    print(n_sims)
-
-    # 1 worker [Finished in 16.568s]
-    # 2 workers [Finished in 9.154s]
-    # 3 workers [Finished in 6.616s]
-    # 4 workers [Finished in 5.525s]
-    # 5 workers [Finished in 4.881s]
-    # 6 workers [Finished in 4.552s]
-    # 7 workers [Finished in 4.17s]
-    # 8 workers [Finished in 3.924s]
-
-    '''
     # 2 parameter inference
     #
     N = 1000
@@ -210,32 +216,67 @@ if __name__ == "__main__":
     sigma_true = 15
     true_parameter_values = [mu_true, sigma_true]
     likelihood = stats.norm(loc=mu_true, scale=sigma_true)
-    likelihood = Normal(loc=mu_true, scale=sigma_true, name="likelihood")
-    data = likelihood.rvs(size=N, seed=42)
-    obs = np.array([np.mean(data), np.std(data)])
 
+    obs_data = likelihood.rvs(size=N)
+
+    # simulator model
     def gaussian_model(mu, sigma, n_samples=1000):
-        """Simulator model, returns summary statistic"""
+        """Simulator model"""
         sim = stats.norm(loc=mu, scale=sigma).rvs(size=n_samples)
-        sumstat = np.array([np.mean(sim), np.std(sim)])
+        return sim
+
+    # summary stats
+    def summary_calculator(data):
+        """returns summary statistic(s)"""
+        sumstat = np.array([np.mean(data), np.std(data)])
         #sumstat = np.mean(sim)
         return sumstat
 
     # priors
-    mu = Normal(loc=165, scale=2, name="mu", tex="$\mu$")
-    sigma = Normal(loc=17, scale=4, name="sigma", tex="$\sigma$")
+    #mu = pylfi.Prior('norm', loc=165, scale=2, name='mu', tex='$\mu$')
+    #sigma = pylfi.Prior('norm', loc=17, scale=4, name='sigma', tex='$\sigma$')
+    mu = pylfi.Prior('uniform', loc=160, scale=10, name='mu')
+    sigma = pylfi.Prior('uniform', loc=10, scale=10, name='sigma')
     priors = [mu, sigma]
 
     # initialize sampler
-    sampler = RejABC(obs, gaussian_model, priors, distance='l2', seed=42)
+    sampler = RejABC(obs_data, gaussian_model,
+                     summary_calculator, priors, distance_metric='l2', seed=42)
 
     # inference config
-    n_samples = 10
+    n_samples = 1000
     epsilon = 1.0
 
-    samples = sampler.sample(n_samples, epsilon=epsilon, n_jobs=-1, log=True)
+    # run inference
+    journal = sampler.sample(n_samples, epsilon=epsilon, n_jobs=-1, log=False)
 
-    print("2 PARAMETERS")
-    print(len(samples))
-    print(samples)
+    # print(journal.results_frame())
+
+    posterior_df = journal.posterior_frame()
+    # print(posterior_df)
+    posterior_dict = journal.posterior_dict()
+    # print(posterior_dict)
+    idata = az.convert_to_inference_data(posterior_dict)
+    # print(idata)
+    # , var_names=["mu", "theta"], coords=coords, rope=(-1, 1))
+    az.plot_trace(idata)
+    # az.plot_posterior(idata)
+    plt.show()
+
+    # print(posterior_dict)
+    #sns.displot(posterior_df, kind="kde")
+    # plt.show()
     '''
+    ax = az.plot_pair(
+        idata,
+        var_names=["mu", "sigma"],
+        kind=["scatter", "kde"],
+        kde_kwargs={"fill_last": False},
+        marginals=True,
+        # coords=coords,
+        point_estimate="median",
+        #figsize=(10, 8),
+    )
+    '''
+
+    # plt.show()

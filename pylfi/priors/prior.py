@@ -130,20 +130,21 @@ class Prior:
         pmf = self.distr.pmf(x, *self.params, **self.kwargs)
         return pmf
 
-    @ property
+    @property
     def name(self):
         return self._name
 
-    @ property
+    @property
     def distr_name(self):
         return self._distr_name
 
-    @ property
+    @property
     def tex(self):
         return self._tex
 
     def plot_prior(self, x):
         # hasattr pdf or pmf
+
         pass
 
 

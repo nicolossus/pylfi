@@ -34,8 +34,9 @@ def setup_logger(name):
     return logger
 
 
-class ABCBase(metaclass=ABCMeta):
-    def __init__(self, observation, simulator, priors, distance, rng, seed):
+# class ABCBase(metaclass=ABCMeta):
+class ABCBase:
+    def __init__(self, observation, simulator, statistics_calculator, priors, distance_metric, seed):
         """
         simulator : callable
             simulator model
@@ -47,18 +48,20 @@ class ABCBase(metaclass=ABCMeta):
         distance_metric : callable
             discrepancy measure
         """
-        self._obs = observation
+        self._obs_data = observation
+        self._stat_calc = statistics_calculator
         self._simulator = simulator
         self._priors = priors
-        self._rng = rng
         self._seed = seed
 
+        self._obs_sumstat = self._stat_calc(self._obs_data)
+
         # Select distance function.
-        if callable(distance):
-            self._distance = distance
-        elif isinstance(distance, str):
-            check_distance_str(distance)
-            self._distance = self._choose_distance(distance)
+        if callable(distance_metric):
+            self._distance_metric = distance_metric
+        elif isinstance(distance_metric, str):
+            check_distance_str(distance_metric)
+            self._distance_metric = self._choose_distance(distance_metric)
         else:
             raise TypeError()
 

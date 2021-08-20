@@ -41,8 +41,6 @@ class MCMCABC(ABCBase):
         self._rng = np.random.default_rng
         self._prior_logpdfs = [prior.logpdf for prior in self._priors]
 
-        self._uniform_distr = stats.uniform(loc=0, scale=1)
-
         samples = self._sample(n_samples, self._seed)
 
         return samples
@@ -55,7 +53,7 @@ class MCMCABC(ABCBase):
         samples = []
 
         # initialize chain
-        thetas_current = self._draw_initial_posterior_sample(seed)
+        thetas_current = self._draw_first_posterior_sample(seed)
         samples.append(thetas_current)
 
         # Pre-loop computations to better efficiency
@@ -122,113 +120,28 @@ class MCMCABC(ABCBase):
 
         return samples
 
-    def _draw_initial_posterior_sample(self, seed):
+    def _draw_first_posterior_sample(self, seed):
         """Draw first posterior sample from prior via Rejection ABC algorithm."""
         sample = None
-        n_sims = 0
         while sample is None:
-            next_gen = advance_PRNG_state(seed, n_sims)
+            next_gen = advance_PRNG_state(seed, self._n_sims)
             thetas = [prior.rvs(seed=next_gen) for prior in self._priors]
             sim = self._simulator(*thetas)
             sim_sumstat = self._stat_calc(sim)
-            n_sims += 1
+            self._n_sims += 1
             distance = self._distance_metric(self._obs_sumstat, sim_sumstat)
             if distance <= self._epsilon:
                 sample = thetas
 
         return sample
 
-    def _draw_proposal(self, scaling, next_gen):
-        """Suggest new position(s)"""
-        # Gaussian proposal distribution (which is symmetric)
-        proposal_distr = stats.norm(
-            loc=thetas_current,
-            scale=scaling,
-        )
-
-        # Draw proposal parameters
-        thetas_proposal = [proposal_distr.rvs(
-            random_state=self._rng(seed=next_gen))]
-
-        # In case of multiple parameters, the joint prior logpdf is computed
-        log_prior_proposal = np.array([prior_logpdf(thetas_proposal)
-                                       for prior_logpdf, thetas_proposal in
-                                       zip(self._prior_logpdfs, thetas_proposal)]
-                                      ).prod()
-
-        return thetas_proposal, log_prior_proposal
-
-    def _mh_step(self, log_prior_proposal, log_prior_current, next_gen):
-        """
-        Compute MH ratio and acceptance probability
-        """
-        # Since the proposal density is symmetric, the proposal density
-        # ratio in MH acceptance probability cancel. Thus, we need only
-        # to evaluate the prior ratio.
-        r = np.exp(log_prior_proposal - log_prior_current)
-
-        # Compute acceptance probability
-        alpha = np.minimum(1., r)
-
-        # Draw a uniform random number
-        u = self._uniform_distr.rvs(random_state=self._rng(seed=next_gen))
-
-        return u < alpha
-
-    def _abc_step(self, thetas_proposal):
-        pass
-
-    def _mh_step(self, thetas_current, thetas_proposal, log_prior_current):
-        sim = self._simulator(*thetas_proposal)
-        sim_sumstat = self._stat_calc(sim)
-        distance = self._distance_metric(
-            self._obs_sumstat, sim_sumstat)
-        # In MCMC-ABC, we also need to accept discrepancy between
-        # observed and simulated summary statistics before the proposal
-        # parameter(s) can be accepted
-        if distance <= self._epsilon:
-            thetas_current = thetas_proposal
-            # Re-compute current log-density for next iteration
-            log_prior_current = np.array([prior_logpdf(theta_current)
-                                          for prior_logpdf, theta_current in
-                                          zip(self._prior_logpdfs, thetas_current)]
-                                         ).prod()
-
-        return thetas_current, log_prior_current
-
-    def _metropolis_hastings_step(self, initial_proposal, seed, scaling):
-
-        # Pre-compute current (joint) prior logpdf. Only needs to be
-        # re-computed in loop if a new proposal is accepted
-        log_prior_current = np.array([prior_logpdf(theta_current)
-                                      for prior_logpdf, theta_current in
-                                      zip(self._prior_logpdfs, thetas_current)]
-                                     ).prod()
-
-        # Metropolis-Hastings algorithm
-        for _ in range(n_samples):
-            # Advance PRNG state
-            next_gen = advance_PRNG_state(seed, self._n_iter)
-
-            thetas_proposal, log_prior_proposal = self._draw_proposal(
-                scaling, next_gen)
-
-            acc_prob = self._accept_proposal(
-                log_prior_proposal, log_prior_current, next_gen)
-
-            # Reject/accept step
-            if acc_prob:
-                thetas_current, log_prior_current = self._mh_step(
-                    thetas_current, thetas_proposal, log_prior_current)
-
+    def _metropolis_hastings_step(self):
         pass
 
     def _tune_sampler(self):
-        # no need to store
         pass
 
     def _burn_in_sampler(self, initial_proposal):
-        # no need to store
         pass
 
     def _metropolis_sampler(self):
@@ -300,17 +213,16 @@ if __name__ == "__main__":
 
     # run inference
     journal = sampler.sample(n_samples, epsilon=epsilon,
-                             sigma=0.5, n_jobs=-1, log=False)
+                             scaling=0.5, n_jobs=-1, log=False)
 
     samples = np.concatenate(journal, axis=0)
 
     # print(autocorr(samples))
 
-    lags = np.arange(1, 100)
     fig, ax = plt.subplots()
     ax.plot(autocorr(samples))
 
-    # sns.distplot(samples[1000:])
+    # sns.distplot(samples)
     plt.show()
 
     '''
