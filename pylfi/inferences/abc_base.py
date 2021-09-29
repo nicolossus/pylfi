@@ -54,7 +54,10 @@ class ABCBase:
         self._priors = priors
         self._seed = seed
 
-        self._obs_sumstat = self._stat_calc(self._obs_data)
+        if isinstance(self._obs_data, tuple):
+            self._obs_sumstat = self._stat_calc(*self._obs_data)
+        else:
+            self._obs_sumstat = self._stat_calc(self._obs_data)
 
         # Select distance function.
         if callable(distance_metric):

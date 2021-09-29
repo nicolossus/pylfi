@@ -27,7 +27,7 @@ class RejABC(ABCBase):
             seed=seed
         )
 
-    def sample(self, n_samples, epsilon=None, n_jobs=-1, log=False):
+    def sample(self, n_samples, epsilon=None, quantile=None, n_tune=500, n_jobs=-1, log=False):
         """
         Due to multiprocessing, estimation time (iteration per loop, total
         time, etc.) could be unstable, but the progress bar works perfectly.
@@ -49,6 +49,15 @@ class RejABC(ABCBase):
 
         seeds = generate_seed_sequence(self._seed, n_jobs)
         tasks = distribute_workload(n_samples, n_jobs)
+
+        if quantile is not None:
+            tasks = distribute_workload(n_samples, n_jobs)
+
+            distances_tune = self._pilot_study(n_tune, seeds[0])
+            # print(distances_tune)
+            #distances_tune = np.concatenate(distances_tune, axis=0)
+            self._epsilon = np.quantile(np.array(distances_tune), quantile)
+            # print(self._epsilon)
 
         if log:
             tqdm.set_lock(RLock())  # for managing output contention
@@ -93,6 +102,25 @@ class RejABC(ABCBase):
         # return results
         # return samples, distances, sum_stats, epsilons, n_sims
         return journal
+
+    def _pilot_study(self, n_tune, seed):
+        """Set threshold"""
+
+        distances = []
+
+        for i in range(n_tune):
+
+            next_gen = advance_PRNG_state(seed, i)
+            thetas = [prior.rvs(seed=next_gen) for prior in self._priors]
+            sim = self._simulator(*thetas)
+            if isinstance(sim, tuple):
+                sim_sumstat = self._stat_calc(*sim)
+            else:
+                sim_sumstat = self._stat_calc(sim)
+            distance = self._distance_metric(self._obs_sumstat, sim_sumstat)
+            distances.append(distance)
+
+        return distances
 
     def _sample(self, n_samples, seed):
         """Sample n_samples from posterior."""
@@ -144,7 +172,10 @@ class RejABC(ABCBase):
             next_gen = advance_PRNG_state(seed, self._n_sims)
             thetas = [prior.rvs(seed=next_gen) for prior in self._priors]
             sim = self._simulator(*thetas)
-            sim_sumstat = self._stat_calc(sim)
+            if isinstance(sim, tuple):
+                sim_sumstat = self._stat_calc(*sim)
+            else:
+                sim_sumstat = self._stat_calc(sim)
             self._n_sims += 1
             distance = self._distance_metric(self._obs_sumstat, sim_sumstat)
             if distance <= self._epsilon:
@@ -240,43 +271,29 @@ if __name__ == "__main__":
     priors = [mu, sigma]
 
     # initialize sampler
-    sampler = RejABC(obs_data, gaussian_model,
-                     summary_calculator, priors, distance_metric='l2', seed=42)
+    sampler = RejABC(obs_data,
+                     gaussian_model,
+                     summary_calculator,
+                     priors,
+                     distance_metric='l2',
+                     seed=42
+                     )
 
     # inference config
     n_samples = 1000
     epsilon = 1.0
+    quantile = 0.01
 
     # run inference
-    journal = sampler.sample(n_samples, epsilon=epsilon, n_jobs=-1, log=False)
+    journal = sampler.sample(n_samples,
+                             epsilon=epsilon,
+                             quantile=quantile,
+                             n_jobs=-1,
+                             log=False
+                             )
 
     # print(journal.results_frame())
-
-    posterior_df = journal.posterior_frame()
-    # print(posterior_df)
-    posterior_dict = journal.posterior_dict()
-    # print(posterior_dict)
-    idata = az.convert_to_inference_data(posterior_dict)
-    # print(idata)
-    # , var_names=["mu", "theta"], coords=coords, rope=(-1, 1))
-    az.plot_trace(idata)
-    # az.plot_posterior(idata)
+    journal.plot_trace()
+    journal.plot_posterior()
+    journal.plot_pair(var_names=["mu", "sigma"])
     plt.show()
-
-    # print(posterior_dict)
-    #sns.displot(posterior_df, kind="kde")
-    # plt.show()
-    '''
-    ax = az.plot_pair(
-        idata,
-        var_names=["mu", "sigma"],
-        kind=["scatter", "kde"],
-        kde_kwargs={"fill_last": False},
-        marginals=True,
-        # coords=coords,
-        point_estimate="median",
-        #figsize=(10, 8),
-    )
-    '''
-
-    # plt.show()

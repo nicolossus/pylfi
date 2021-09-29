@@ -300,7 +300,7 @@ if __name__ == "__main__":
 
     # run inference
     journal = sampler.sample(n_samples, epsilon=epsilon,
-                             sigma=0.5, n_jobs=-1, log=False)
+                             scaling=0.5, n_jobs=-1, log=False)
 
     samples = np.concatenate(journal, axis=0)
 
@@ -308,9 +308,9 @@ if __name__ == "__main__":
 
     lags = np.arange(1, 100)
     fig, ax = plt.subplots()
-    ax.plot(autocorr(samples))
+    # ax.plot(autocorr(samples))
 
-    # sns.distplot(samples[1000:])
+    sns.displot(samples[1000:])
     plt.show()
 
     '''

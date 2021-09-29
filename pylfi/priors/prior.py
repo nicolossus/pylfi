@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
 
@@ -142,10 +143,41 @@ class Prior:
     def tex(self):
         return self._tex
 
-    def plot_prior(self, x):
-        # hasattr pdf or pmf
+    def plot_prior(self, x, ax=None, filename=None, figsize=(6, 4), dpi=100):
+        r"""Plot prior PDF evaluated at x.
 
-        pass
+        Parameters
+        ----------
+        x : array_like
+            Quantiles
+        ax : Axes, optional
+            Axes object. Default is None.
+        show : bool, optional
+            Calls plt.show() if True. Default is True.
+        filename : str, optional
+            Saves the figure as filename if provided. Default is None.
+        dpi : int, optional
+            Set figure dpi, default=100.
+        """
+        # hasattr pdf or pmf
+        pdf = self.pdf(x)
+
+        if self.tex is not None:
+            x_handle = self.tex
+        else:
+            x_handle = self.name
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1,
+                                   figsize=figsize,
+                                   dpi=dpi)
+        ax.plot(x, pdf)
+        ax.fill_between(x, pdf, alpha=0.5, facecolor='lightblue')
+        ax.set_ylabel('Density')
+        ax.set_xlabel(x_handle)
+        if filename is not None:
+            fig.savefig(filename)
+        return ax
 
 
 if __name__ == "__main__":
@@ -153,7 +185,9 @@ if __name__ == "__main__":
     dist = 'norm'
     theta = Prior(dist, loc=0, scale=1, name='theta')
     print(theta.rvs(1, seed=42))
-    x = np.linspace(0, 1, 1000)
+    x = np.linspace(-0.1, 1.1, 1000)
 
-    plt.plot(x, theta.logpdf(x))
+    theta.plot_prior(x)
+
+    #plt.plot(x, theta.logpdf(x))
     plt.show()

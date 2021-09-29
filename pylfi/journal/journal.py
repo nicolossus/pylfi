@@ -6,9 +6,11 @@ import os
 import pickle
 import sys
 
+import arviz as az
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from matplotlib import gridspec
 from pylfi.utils import setup_logger
 
@@ -106,8 +108,9 @@ class Journal:
             self._posterior_samples[parameter_name] = posterior_samples[:, i]
 
         if summary_stats.ndim > 1:
-            for i in range(summary_stats.ndim):
-                self._sampler_results[f"sum_stat{i+1}"] = summary_stats[:, i]
+            if len(summary_stats[0]) > 1:
+                for i in range(summary_stats.ndim):
+                    self._sampler_results[f"sum_stat{i+1}"] = summary_stats[:, i]
         else:
             self._sampler_results["sum_stat"] = summary_stats
         self._sampler_results["distance"] = distances
@@ -174,3 +177,32 @@ class Journal:
     def posterior_frame(self):
         check_journal_status(self._journal_started)
         return self._posterior_samples_df
+
+    @property
+    def idata(self):
+        posterior_dict = self.posterior_dict()
+        # print(posterior_dict)
+        idata = az.convert_to_inference_data(posterior_dict)
+        return idata
+
+    def plot_trace(self):
+        az.plot_trace(self.idata)
+
+    def plot_posterior(self):
+        az.plot_posterior(self.idata)
+
+    def displot(self):
+        df = self.posterior_frame()
+        sns.displot(df, kind="kde")
+
+    def plot_pair(self, var_names, figsize=(6, 4)):
+        ax = az.plot_pair(
+            self.idata,
+            var_names=var_names,
+            kind=["scatter", "kde"],
+            kde_kwargs={"fill_last": False},
+            marginals=True,
+            # coords=coords,
+            point_estimate="mean",
+            figsize=figsize,
+        )
