@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -11,198 +10,101 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import xarray as xr
 from matplotlib import gridspec
-from pylfi.utils import setup_logger
-
-from ._checks import *
-from ._journal_base import JournalInternal
 
 
 class Journal:
 
     def __init__(self):
         # list of parameter names (the 'name' kw from Prior object)
-        self.parameter_names = []
+        self.param_names = []
         # list of parameter LaTeX names (the 'tex' kw from Prior object)
-        self.parameter_names_tex = []
-        # list of labels (param names) for plots; uses 'name' if 'tex' is None
-        self.labels = []
-        # list for storing distances of accepted samples
-        #self.distances = []
-        #self.rel_distances = []
-        # list for storing summary statistic values of accepted samples
-        #self.sumstats = []
+        self.param_names_tex = []
+
         # for tallying the number of inferred parameters
-        self._n_parameters = 0
+        self._n_params = 0
 
-        # dict for storing inference configuration
-        self.configuration = {}
-        # dict for summarizing inference run
-        self._sampler_summary = {}
-        # dict for storing sampler results
-        self._sampler_results = {}
-        self._posterior_samples = {}
+        # sampler configuration and info
+        self._info_df = {}
 
-        self._sampler_stats = {}
+        # posterior samples dicts for data structures
+        self._idata = {}
+        self._idata_plot = {}
+        self._df = {}
+        self._df_plot = {}
 
         # bool used to limit access if journal has not been written to
-        self._journal_started = False
+        self._journal_written = False
 
     def _write_to_journal(
         self,
+        inference_scheme,
         observation,
         simulator,
         stat_calc,
         priors,
-        distance_metric,
-        inference_scheme,
         n_samples,
-        n_simulations,
-        posterior_samples,
-        summary_stats,
-        distances,
-        epsilons,
-        log
+        chains,
+        samples,
+        accept_ratio,
+        epsilon,
+        quantile
     ):
-        # journal is started
-        self._journal_started = True
-        self._log = log
+        """
+        Write to journal
+        """
 
-        if self._log:
-            self.logger = setup_logger(self.__class__.__name__)
-            self.logger.info("Write to journal.")
+        self._observation = observation
+        self._simulator = simulator
+        self._stat_calc = statistics_calculator
+        self._priors = priors
 
-        # initialize data structures
-        self._write_initialize(priors)
-        # write sampler results
-        self._write_results(posterior_samples,
-                            summary_stats,
-                            distances,
-                            epsilons)
+        # Extract parameter names and set up data structures
+        for param in priors:
 
-        self._sampler_results_df = pd.DataFrame(self._sampler_results)
-        self._posterior_samples_df = pd.DataFrame(self._posterior_samples)
+            self._param_names.append(param.name)
+            self._idata[param.name] = None
+            seldf._df[param.name] = None
 
-    def _write_initialize(self, priors):
-        """Extract parameter names and set up data structures"""
+            if param.tex is not None:
+                self._param_names_tex.append(param.tex)
+                self._idata_plot[param.tex] = None
+                seldf._df_plot[param.tex] = None
 
-        for parameter in priors:
-            name = parameter.name
-            tex = parameter.tex
-            self.parameter_names.append(name)
-            self._sampler_results[name] = None
-            self._posterior_samples[name] = None
-            self._sampler_stats[name] = None
-            self.parameter_names_tex.append(tex)
-            self._n_parameters += 1
-            if tex is None:
-                self.labels.append(name)
-            else:
-                self.labels.append(tex)
+            self._n_params += 1
 
-    def _write_results(self, posterior_samples, summary_stats, distances, epsilons):
-        """Write sampler results to data structure"""
+        # configuration
+        self._config["Inference scheme"] = inference_scheme
+        self._config["Simulator model"] = self._simulator.__name__
+        self._config["quantile"] = quantile
+        self._config["epsilon"] = epsilon
+        self._config["accept_ratio"] = accept_ratio
 
         for i, parameter_name in enumerate(self.parameter_names):
             self._sampler_results[parameter_name] = posterior_samples[:, i]
             self._posterior_samples[parameter_name] = posterior_samples[:, i]
 
-        if summary_stats.ndim > 1:
-            if len(summary_stats[0]) > 1:
-                for i in range(summary_stats.ndim):
-                    self._sampler_results[f"sum_stat{i+1}"] = summary_stats[:, i]
-        else:
-            self._sampler_results["sum_stat"] = summary_stats
-        self._sampler_results["distance"] = distances
-        self._sampler_results["epsilon"] = epsilons
+        # Written to journal
+        self._journal_written = True
 
-    def _write_config(self, simulator, ):
-        """Store inference configuration"""
+    def _idata(self):
+        for i, param_name in enumerate(parameter_names):
+            idata_posterior[param_name] = (
+                ["chain", "draw"], [posterior_samples[:, i]])
 
-        self.configuration["Inference scheme"] = inference_scheme
-        self.configuration["Simulator model"] = simulator.__name__
-        # prior?
-        self.configuration["Distance metric"] = distance_metric.__name__
+        idata_coords = {"chain": chains,
+                        "draw": np.arange(n_samples, dtype=int)}
 
-    def _create_idata(self):
+        # print(idata_posterior)
+        # print(idata_coords)
+
+        idata = xr.Dataset(idata_posterior, idata_coords)
+        print(idata)
+        # ppc - need to add simulator
+        # idata_plot with tex names (see Prior class for extraction)
+        ppc = pm.sample_posterior_predictive(..., keep_size=True)
+        az.concat(idata, az.from_dict(posterior_predictive=ppc), inplace=True)
+
+    def plot_priors(self):
         pass
-
-    def _create_df(self):
-        pass
-
-    def save(self, filename):
-        """
-        Stores the journal to disk.
-
-        Parameters
-        ----------
-        filename: string
-            the location of the file to store the current object to.
-        """
-
-        with open(filename, 'wb') as output:
-            pickle.dump(self, output, -1)
-
-    def load(self, filename):
-        with open(filename, 'rb') as input:
-            journal = pickle.load(input)
-        return journal
-
-    def get_simulator(self):
-        pass
-
-    def get_priors(self):
-        pass
-
-    def get_posterior(kernel='gaussian', bw='scott'):
-        # return kde of posterior array(s)
-        pass
-
-    def sample_posterior(n_samples, kernel='gaussian', bw='scott'):
-        # return n_samples from posterior kde
-        pass
-
-    def results_dict():
-        check_journal_status(self._journal_started)
-        return self._sampler_results
-
-    def results_frame(self):
-        check_journal_status(self._journal_started)
-        return self._sampler_results_df
-
-    def posterior_dict(self):
-        check_journal_status(self._journal_started)
-        return self._posterior_samples
-
-    def posterior_frame(self):
-        check_journal_status(self._journal_started)
-        return self._posterior_samples_df
-
-    @property
-    def idata(self):
-        posterior_dict = self.posterior_dict()
-        # print(posterior_dict)
-        idata = az.convert_to_inference_data(posterior_dict)
-        return idata
-
-    def plot_trace(self):
-        az.plot_trace(self.idata)
-
-    def plot_posterior(self):
-        az.plot_posterior(self.idata)
-
-    def displot(self):
-        df = self.posterior_frame()
-        sns.displot(df, kind="kde")
-
-    def plot_pair(self, var_names, figsize=(6, 4)):
-        ax = az.plot_pair(
-            self.idata,
-            var_names=var_names,
-            kind=["scatter", "kde"],
-            kde_kwargs={"fill_last": False},
-            marginals=True,
-            # coords=coords,
-            point_estimate="mean",
-            figsize=figsize,
-        )
