@@ -30,7 +30,7 @@ def check_and_set_jobs(n_jobs, logger=None):
         msg = ("n_jobs must be passed as int.")
         raise TypeError(msg)
 
-    if n_jobs < -1:
+    if n_jobs < -1 or n_jobs == 0:
         msg = ("With the exception of n_jobs=-1, negative n_jobs cannot be "
                "passed.")
         raise ValueError(msg)
@@ -48,7 +48,7 @@ def check_and_set_jobs(n_jobs, logger=None):
     return n_jobs
 
 
-def distribute_workload(n_samples, n_jobs):
+def distribute_workload(n_samples, n_jobs, force_equal=False, logger=None):
     """Distribute workload between workers.
 
     Parameters
@@ -63,9 +63,18 @@ def distribute_workload(n_samples, n_jobs):
     object : :obj:`list`
         List of workload for each worker in the pool.
     """
+    if force_equal:
+        n_samples_org = n_samples
+        while n_samples % n_jobs != 0:
+            n_samples += 1
+        if n_samples_org != n_samples and logger is not None:
+            msg = (f"Number of samples set to {n_samples} to enforce "
+                   "equal length of chains.")
+            logger.warn(msg)
     inputs = np.arange(n_samples)
     chunks = np.array_split(inputs, n_jobs)
-    return [len(chunk) for chunk in chunks]
+    tasks = [len(chunk) for chunk in chunks]
+    return n_samples, tasks
 
 
 def generate_seed_sequence(user_seed=None, pool_size=None):

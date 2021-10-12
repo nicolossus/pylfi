@@ -1,35 +1,39 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
 
 
 class Prior:
+    r"""
+    Initialize a Prior.
+
+    Parameters
+    ----------
+    distr_name : str
+        Any distribution from `scipy.stats` as a string.
+    params:
+        Parameters of the prior distribution. Typically these would be
+        `shape` parameters or `loc` and `scale` passed as positional
+        arguments.
+    kwargs:
+        kwargs are passed to the scipy distribution methods. Typically
+        these would be `loc` and `scale`.
+
+    Notes
+    -----
+    The parameters of the `scipy` distributions (typically `loc` and `scale`)
+    must be given as positional arguments.
+
+    Many algorithms (e.g. MCMC) also require a `pdf` method for the
+    distribution. In general the definition of the distribution is a
+    subset of `scipy.stats.rv_continuous`:
+    Scipy distributions: https://docs.scipy.org/doc/scipy-0.19.0/reference/stats.html
+    """
 
     def __init__(self, distr_name, *params, name=None, tex=None, **kwargs):
-        """
-        Initialize a Prior.
-
-        Parameters
-        ----------
-        distr_name : str
-            Any distribution from `scipy.stats` as a string.
-        params:
-            Parameters of the prior distribution. Typically these would be
-            `shape` parameters or `loc` and `scale` passed as positional
-            arguments.
-        kwargs:
-            kwargs are passed to the scipy distribution methods. Typically
-            these would be `loc` and `scale`.
-
-        Notes
-        -----
-        The parameters of the `scipy` distributions (typically `loc` and `scale`) must be
-        given as positional arguments.
-        Many algorithms (e.g. SMC) also require a `pdf` method for the distribution. In
-        general the definition of the distribution is a subset of
-        `scipy.stats.rv_continuous`.
-        Scipy distributions: https://docs.scipy.org/doc/scipy-0.19.0/reference/stats.html
-        """
 
         if name is None:
             msg = ("'name' of random variate must be provided as str")
@@ -63,8 +67,13 @@ class Prior:
         ----------
         size : int, tuple or None, optional
             Output size of a single random draw.
+        seed : int, optional
+            Seed
 
-
+        Returns
+        -------
+        rvs : ndarray
+            Random variables
         """
 
         rvs = self.distr.rvs(*self.params,
@@ -143,7 +152,14 @@ class Prior:
     def tex(self):
         return self._tex
 
-    def plot_prior(self, x, ax=None, filename=None, figsize=(6, 4), dpi=100):
+    def plot_prior(
+        self,
+        x, ax=None,
+        filename=None,
+        figsize=(6, 4),
+        dpi=100,
+        **kwargs
+    ):
         r"""Plot prior PDF evaluated at x.
 
         Parameters
@@ -159,7 +175,7 @@ class Prior:
         dpi : int, optional
             Set figure dpi, default=100.
         """
-        # hasattr pdf or pmf
+        # TODO: hasattr pdf or pmf
         pdf = self.pdf(x)
 
         if self.tex is not None:
@@ -171,7 +187,7 @@ class Prior:
             fig, ax = plt.subplots(1, 1,
                                    figsize=figsize,
                                    dpi=dpi)
-        ax.plot(x, pdf)
+        ax.plot(x, pdf, **kwargs)
         ax.fill_between(x, pdf, alpha=0.5, facecolor='lightblue')
         ax.set_ylabel('Density')
         ax.set_xlabel(x_handle)
