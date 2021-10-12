@@ -118,8 +118,8 @@ class Prior:
             Log of pdf evaluated at x
         """
 
-        pdf = self.distr.logpdf(x, *self.params, **self.kwargs)
-        return pdf
+        logpdf = self.distr.logpdf(x, *self.params, **self.kwargs)
+        return logpdf
 
     def pmf(self, x):
         r"""Evaluate the probability mass function (pmf).
