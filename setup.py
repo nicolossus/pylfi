@@ -23,7 +23,8 @@ REQUIRES_INSTALL = [
     "seaborn",
     "tqdm",
     "pathos",
-    "colorlog"
+    "colorlog",
+    "arviz"
 ]
 
 REQUIRES_EXTRAS = {
