@@ -19,7 +19,11 @@ REQUIRES_INSTALL = [
     "numpy",
     "matplotlib",
     "scipy",
-    "sklearn",
+    "pandas",
+    "seaborn",
+    "tqdm",
+    "pathos",
+    "colorlog"
 ]
 
 REQUIRES_EXTRAS = {
@@ -29,6 +33,7 @@ REQUIRES_EXTRAS = {
         "flake8>=3.9.2",
         "isort",
         "twine",
+
     ],
 }
 
