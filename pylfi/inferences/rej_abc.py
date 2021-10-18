@@ -185,8 +185,8 @@ class RejABC(ABCBase):
         journal._write_to_journal(
             inference_scheme=self._inference_scheme,
             observation=self._obs_data,
-            simulator=self._simulator,
-            stat_calc=self._stat_calc,
+            # simulator=self._simulator,
+            # stat_calc=self._stat_calc,
             priors=self._priors,
             n_samples=self._n_samples,
             n_chains=1,

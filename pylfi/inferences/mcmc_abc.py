@@ -6,10 +6,11 @@ import multiprocessing
 from multiprocessing import Lock, RLock
 
 import numpy as np
+import scipy.stats as stats
 from pathos.pools import ProcessPool
 from pylfi.inferences import ABCBase, PilotStudyMissing, SamplingNotPerformed
 from pylfi.journal import Journal
-from pylfi.utils import advance_PRNG_state
+from pylfi.utils import advance_PRNG_state, generate_seed_sequence
 from tqdm.auto import tqdm
 
 
@@ -33,6 +34,117 @@ class MCMCABC(ABCBase):
             inference_scheme="MCMC ABC",
             log=log
         )
+
+    def tune(
+            self,
+            prop_scale=0.5,
+            epsilon=None,
+            tune_iter=500,
+            tune_interval=100,
+            stat_weight=1.,
+            stat_scale=1.,
+            seed=None,
+            use_pilot=False
+    ):
+        """Tune the proposal scale
+
+        So how do we choose sd for the proposal distribution? There are some
+        papers that suggest Metropolis-Hastings is most efficient when you accept
+        23.4% of proposed samples, and it turns out that lowering step size
+        increases the probability of accepting a proposal. PyMC3 will spend the
+        first 500 steps increasing and decreasing the step size to try to find
+        the best value of sd that will give you an acceptance rate of 23.4%
+        (you can even set different acceptance rates).
+
+        The problem is that if you change the step size while sampling, you lose
+        the guarantees that your samples (asymptotically) come from the target
+        distribution, so you should typically discard these. Also, there is
+        typically a lot more adaptation going on in those first steps than just
+        step_size.
+        """
+
+        if self._log:
+            self.logger.info("Run MCMC tuner.")
+
+        if use_pilot:
+            if not self._done_pilot_study:
+                msg = ("In order to use tuning from pilot study, the "
+                       "pilot_study method must be run in advance.")
+                raise PilotStudyMissing(msg)
+        else:
+            if epsilon is None:
+                msg = ("epsilon must be passed.")
+                raise ValueError(msg)
+            self._epsilon = epsilon
+            self._stat_scale = stat_scale
+
+        self._n_samples = n_samples
+        self._burn = burn
+        self._stat_weight = stat_weight
+
+        self._prop_scale = prop_scale
+
+        if self._log:
+            t_range = tqdm(range(n_iter),
+                           desc=f"[Sampling progress] Chain {position+1}",
+                           position=position,
+                           leave=False,
+                           colour='green')
+        else:
+            t_range = range(n_iter)
+
+        seeds = generate_seed_sequence(seed, n_jobs)
+
+        n_accepted = 0
+
+        # Initialize chain
+        thetas_current, _, _ = self._draw_initial_sample(seed)
+
+        # Compute current logpdf
+        # (only needs to be re-computed if proposal is accepted)
+        logpdf_current = self._compute_logpdf(thetas_current)
+
+        # Metropolis algorithm
+        for i in t_range:
+            # Advance PRNG state
+            next_gen = advance_PRNG_state(seed, i)
+            # Draw proposal
+            thetas_proposal = self._draw_proposal(thetas_current, next_gen)
+            # Compute proposal logpdf
+            logpdf_proposal = self._compute_logpdf(thetas_proposal)
+            # Compute acceptance probability
+            alpha = self._acceptance_prob(logpdf_proposal, logpdf_current)
+            # Draw a uniform random number
+            u = self._draw_uniform(next_gen)
+            # Metropolis reject/accept step
+            if u < alpha:
+                # Simulator call to generate simulated data
+                sim = self._simulator(*thetas_proposal)
+                # Calculate summary statistics of simulated data
+                if isinstance(sim, tuple):
+                    sim_sumstat = self._stat_calc(*sim)
+                else:
+                    sim_sumstat = self._stat_calc(sim)
+
+                # Compute distance between summary statistics
+                distance = self.distance(sim_sumstat,
+                                         self._obs_sumstat,
+                                         weight=self._stat_weight,
+                                         scale=self._stat_scale
+                                         )
+                # ABC reject/accept step
+                if distance <= self._epsilon:
+                    thetas_current = thetas_proposal
+                    # Increase accepted counter
+                    n_accepted += 1
+                    # Re-compute current logpdf
+                    logpdf_current = self._compute_logpdf(thetas_current)
+
+            if tune_now:
+                pass
+
+        #
+        self._done_tuning = True
 
     def sample(
         self,
@@ -74,7 +186,7 @@ class MCMCABC(ABCBase):
         """
 
         if self._log:
-            self.logger.info("Run rejection sampler.")
+            self.logger.info("Run MCMC sampler.")
 
         if use_pilot:
             if not self._done_pilot_study:
@@ -93,9 +205,10 @@ class MCMCABC(ABCBase):
         self._burn = burn
         self._stat_weight = stat_weight
 
-        self._prior_logpdfs = [prior.logpdf for prior in self._priors]
-        self._rng = np.random.default_rng
-        self._uniform_distr = stats.uniform(loc=0, scale=1)
+        # These are set in base instead
+        #self._prior_logpdfs = [prior.logpdf for prior in self._priors]
+        #self._rng = np.random.default_rng
+        #self._uniform_distr = stats.uniform(loc=0, scale=1)
 
         # mcmc knobs
         self._prop_scale = prop_scale
@@ -349,6 +462,15 @@ class MCMCABC(ABCBase):
 
         return scale
 
+    @property
+    def prop_scale(self):
+        try:
+            return self._prop_scale
+        except AttributeError:
+            msg = ("stat_scale inaccessible. A call to a method where the"
+                   "attribute is set must be carried out first.")
+            raise MissingParameter(msg)
+
     def journal(self):
         """
         Create and return an instance of Journal class.
@@ -425,9 +547,9 @@ if __name__ == "__main__":
     s_obs = summary_calculator(obs_data)
     # print(f"{s_obs=}")
     # priors
-    mu = pylfi.Prior('norm', loc=165, scale=2, name='mu', tex='$\mu$')
+    mu = pylfi.Prior('norm', loc=165, scale=2, name='mu', tex=r'$\mu$')
     sigma = pylfi.Prior('norm', loc=17, scale=4,
-                        name='sigma', tex='$\sigma$')
+                        name='sigma', tex=r'$\sigma$')
     # mu = pylfi.Prior('uniform', loc=160, scale=10, name='mu')
     # sigma = pylfi.Prior('uniform', loc=10, scale=10, name='sigma')
     priors = [mu, sigma]

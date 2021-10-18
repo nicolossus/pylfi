@@ -6,6 +6,7 @@ from abc import abstractmethod
 from multiprocessing import Lock, RLock
 
 import numpy as np
+import scipy.stats as stats
 from pathos.pools import ProcessPool
 from pylfi.utils import (advance_PRNG_state, check_and_set_jobs,
                          distribute_workload, generate_seed_sequence,
@@ -65,6 +66,10 @@ class ABCBase:
         self._priors = priors
         self._log = log
 
+        self._prior_logpdfs = [prior.logpdf for prior in self._priors]
+        self._rng = np.random.default_rng
+        self._uniform_distr = stats.uniform(loc=0, scale=1)
+
         if isinstance(self._obs_data, tuple):
             self._obs_sumstat = self._stat_calc(*self._obs_data)
         else:
@@ -77,6 +82,7 @@ class ABCBase:
             self.logger.info(f"Initialize {self._inference_scheme} sampler.")
 
         self._done_pilot_study = False
+        self._done_tuning = False
         self._done_sampling = False
 
     @abstractmethod
@@ -125,7 +131,8 @@ class ABCBase:
         s_obs : {:obj:`int`, :obj:`float`}, :term:`array_like`
             Observed summary statistic(s).
         weight: {:obj:`int`, :obj:`float`}, :term:`ndarray`, optional
-            Importance weight(s) of summary statistic(s). Default: `1.`.
+            Importance weight(s) of summary statistic(s). Should sum to 1.
+            Default: `1.`.
         scale: {:obj:`int`, :obj:`float`}, :term:`ndarray`, optional
             Scale weight(s) of summary statistic(s). Default: `1.`.
 
@@ -144,7 +151,7 @@ class ABCBase:
         s_sim = np.asarray(s_sim, dtype=float)
         s_obs = np.asarray(s_obs, dtype=float)
 
-        q = weight * (s_sim - s_obs) / scale
+        q = np.sqrt(weight) * (s_sim - s_obs) / scale
         dist = np.linalg.norm(q, ord=2)
 
         return dist
@@ -232,10 +239,23 @@ class ABCBase:
         will give a threshold that accepts roughly (because the threshold
         will be an estimate) 50% of the simulations.
 
-        The pilot study can also be used to provide an estimate of the `scale`
-        parameter, used in the weighted Euclidean distance, from the prior
-        predictive distribution by passing the `stat_scale` keyword as
-        `sd` or `mad`.
+        The pilot study can also be used to provide an estimate of the
+        `stat_scale` parameter, used in the weighted Euclidean distance, from
+        the prior predictive distribution by passing the `stat_scale` keyword as
+        `sd` or `mad`. The `stat_scale` parameter is used to avoid dominance
+        of particular summary statistics. `stat_scale=sd` scales the summary
+        statistics according to their standard deviation (SD) estimated from
+        the prior predictive samples, and `stat_scale=mad` according to their
+        median absolute deviation (MAD).
+
+        It is important to note that if more than 50% of the prior predictive
+        samples for a particular summary statistic have identical values, MAD
+        will equal zero. In this case, the logger will raise a warning and
+        the scale for the particular summary statistic will be set to SD
+        instead. If there is no variability at all, the scale will be set to 1.
+
+        It is recommended to check that there are not too many identical
+        samples before setting the scale, to avoid surprises.
 
         Parameters
         ----------
@@ -268,7 +288,7 @@ class ABCBase:
             msg = ("quantile must be a value in (0, 1].")
             raise ValueError(msg)
 
-        if stat_scale is not None:
+        if isinstance(stat_scale, str):
             if stat_scale not in VALID_STAT_SCALES:
                 msg = ("scale can be set as either sd (standard deviation) or "
                        "mad (median absolute deviation). If None, it defaults "
@@ -310,15 +330,40 @@ class ABCBase:
 
         if stat_scale is None:
             self._stat_scale = 1.
+
         elif stat_scale == "sd":
-            self._stat_scale = sum_stats.std(axis=0)
+            self._stat_scale = self._sd(sum_stats)
+
+            if 0 in self._stat_scale:
+                idx = np.where(self._stat_scale == 0)
+
+                if self._log:
+                    msg = (f"Encounterd SD = 0 for summary statistic at index:"
+                           f" {idx[0]}. Setting this to 1.")
+                    self.logger.warn(msg)
+
+                self._stat_scale[idx] = 1.
+
         elif stat_scale == "mad":
-            self._stat_scale = np.median(np.absolute(
-                sum_stats - np.median(sum_stats, axis=0)), axis=0)
-        else:
-            msg = ("scale can be set as either sd (standard deviation) or "
-                   "mad (median absolute deviation). If None, defaults to 1.")
-            raise ValueError(msg)
+            self._stat_scale = self._mad(sum_stats)
+
+            if 0 in self._stat_scale:
+                # Check if MAD=0 for some sum stats
+                idx = np.where(self._stat_scale == 0)
+
+                if self._log:
+                    msg = (f"Encounterd MAD = 0 for summary statistic at index:"
+                           f" {idx[0]}. Setting this to SD "
+                           "(or 1 if also SD = 0).")
+                    self.logger.warn(msg)
+
+                backup_stat_scale = sum_stats.std(axis=0)
+                self._stat_scale[idx] = backup_stat_scale[idx]
+
+                if 0 in self._stat_scale:
+                    # Ensure that replaced sum stat scales is not SD=0
+                    idx = np.where(self._stat_scale == 0)
+                    self._stat_scale[idx] = 1.
 
         distances = []
         for sum_stat in sum_stats:
@@ -329,12 +374,29 @@ class ABCBase:
                                      )
             distances.append(distance)
 
-        self._epsilon = np.quantile(np.array(distances), self._quantile)
+        distances = np.array(distances, dtype=np.float64)
+        distances[distances == np.inf] = np.NaN
+        self._epsilon = np.nanquantile(distances, self._quantile)
         self._done_pilot_study = True
 
         if self._log:
             self.logger.info(f"epsilon = {self._epsilon}")
-            self.logger.info(f"{stat_scale} = {self._stat_scale}")
+            self.logger.info(f"stat_scale = {self._stat_scale}")
+
+    def _sd(self, a, axis=0):
+        """Standard deviation from the mean"""
+        a = a.astype(np.float64)
+        a[a == np.inf] = np.NaN
+        sd = np.sqrt(np.nanmean(
+            np.abs(a - np.nanmean(a, axis=axis))**2, axis=axis))
+        return sd
+
+    def _mad(self, a, axis=0):
+        """Median absolute deviation (MAD)"""
+        a = a.astype(np.float64)
+        mad = np.median(np.absolute(
+            a - np.median(a, axis=axis)), axis=axis)
+        return mad
 
     def _pilot_study(self, n_sims, position, seed):
         """Pilot study simulator calls and calculations."""

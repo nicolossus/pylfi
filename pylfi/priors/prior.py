@@ -4,6 +4,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
+import seaborn as sns
 
 
 class Prior:
@@ -114,7 +115,7 @@ class Prior:
 
         Returns
         -------
-        pdf : ndarray
+        logpdf : ndarray
             Log of pdf evaluated at x
         """
 
@@ -154,10 +155,11 @@ class Prior:
 
     def plot_prior(
         self,
-        x, ax=None,
-        filename=None,
-        figsize=(6, 4),
-        dpi=100,
+        x,
+        color='C0',
+        facecolor='lightblue',
+        alpha=0.5,
+        ax=None,
         **kwargs
     ):
         r"""Plot prior PDF evaluated at x.
@@ -184,16 +186,12 @@ class Prior:
             x_handle = self.name
 
         if ax is None:
-            fig, ax = plt.subplots(1, 1,
-                                   figsize=figsize,
-                                   dpi=dpi)
-        ax.plot(x, pdf, **kwargs)
-        ax.fill_between(x, pdf, alpha=0.5, facecolor='lightblue')
+            ax = plt.gca()
+
+        ax.plot(x, pdf, color=color, **kwargs)
+        ax.fill_between(x, pdf, facecolor=facecolor, alpha=alpha)
         ax.set_ylabel('Density')
         ax.set_xlabel(x_handle)
-        if filename is not None:
-            fig.savefig(filename)
-        return ax
 
 
 if __name__ == "__main__":
