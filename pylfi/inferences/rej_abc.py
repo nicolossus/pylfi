@@ -83,23 +83,31 @@ class RejABC(ABCBase):
             initializer = None
             initargs = None
 
-        with ProcessPool(n_jobs) as pool:
-            r0, r1, r2, r3 = zip(
-                *pool.map(
-                    self._sample,
-                    tasks,
-                    range(n_jobs),
-                    seeds,
-                    initializer=initializer,
-                    initargs=initargs
+        if n_jobs == 1:
+            r0, r1, r2, r3 = self._sample(tasks[0], 0, seeds[0])
+            self._original_samples = np.stack(r0)
+            self._samples = copy.deepcopy(self._original_samples)
+            self._distances = np.stack(r1)
+            self._sum_stats = np.stack(r2)
+            self._n_sims = r3
+        else:
+            with ProcessPool(n_jobs) as pool:
+                r0, r1, r2, r3 = zip(
+                    *pool.map(
+                        self._sample,
+                        tasks,
+                        range(n_jobs),
+                        seeds,
+                        initializer=initializer,
+                        initargs=initargs
+                    )
                 )
-            )
 
-        self._original_samples = np.concatenate(r0, axis=0)
-        self._samples = copy.deepcopy(self._original_samples)
-        self._distances = np.concatenate(r1, axis=0)
-        self._sum_stats = np.concatenate(r2, axis=0)
-        self._n_sims = np.sum(r3)
+            self._original_samples = np.concatenate(r0, axis=0)
+            self._samples = copy.deepcopy(self._original_samples)
+            self._distances = np.concatenate(r1, axis=0)
+            self._sum_stats = np.concatenate(r2, axis=0)
+            self._n_sims = np.sum(r3)
 
         self._done_sampling = True
 
@@ -231,6 +239,11 @@ if __name__ == "__main__":
                              )
 
     obs_data = likelihood.rvs(size=N, seed=30)
+    rng = np.random.default_rng()
+    sigma_noise = 0.1
+    noise = rng.normal(0, sigma_noise, N)
+    obs_data += noise
+    # observation
 
     # simulator model
     def gaussian_model(mu, sigma, seed=43, n_samples=1000):
@@ -244,8 +257,8 @@ if __name__ == "__main__":
     # summary stats
     def summary_calculator(data):
         """returns summary statistic(s)"""
-        sumstat = np.array([np.mean(data), np.std(data)])
-        # sumstat = np.mean(sim)
+        #sumstat = np.array([np.mean(data), np.std(data)])
+        sumstat = [np.mean(data)]
         return sumstat
 
     s_obs = summary_calculator(obs_data)
@@ -280,12 +293,15 @@ if __name__ == "__main__":
                              )
 
     df = journal.df
+    fig, ax = plt.subplots(figsize=(6, 4), tight_layout=True, dpi=120)
+    journal.plot_posterior('mu', point_estimate='map', theta_true=163, ax=ax)
     # print(df)
     #idata = journal.idata
     # print(idata)
     # print(idata["posterior"])
     #sns.kdeplot(data=df, x="mu", y="sigma", fill=True)
     #sns.pairplot(df, kind="kde")
+    '''
     sns.jointplot(
         data=df,
         x="mu",
@@ -295,14 +311,19 @@ if __name__ == "__main__":
     )
     # az.plot_trace(idata)
     plt.ticklabel_format(useOffset=False)
+    '''
 
-    journal = sampler.reg_adjust(method="loclinear",
+    journal = sampler.reg_adjust(method="linear",
                                  kernel="epkov",
-                                 standardize=False,
+                                 transform=False,
                                  return_journal=True
                                  )
 
     df = journal.df
+    fig, ax = plt.subplots(figsize=(6, 4), tight_layout=True, dpi=120)
+    journal.plot_posterior('mu', point_estimate='map', theta_true=163, ax=ax)
+    plt.show()
+    '''
     sns.jointplot(
         data=df,
         x="mu",
@@ -318,3 +339,4 @@ if __name__ == "__main__":
     # print(idata["posterior"])
     #print(idata.posterior.stack(sample=("chain", "draw")))
     # az.plot_trace(idata)
+    '''

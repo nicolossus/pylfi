@@ -71,9 +71,9 @@ class ABCBase:
         self._uniform_distr = stats.uniform(loc=0, scale=1)
 
         if isinstance(self._obs_data, tuple):
-            self._obs_sumstat = self._stat_calc(*self._obs_data)
+            self._obs_sumstat = np.array(self._stat_calc(*self._obs_data))
         else:
-            self._obs_sumstat = self._stat_calc(self._obs_data)
+            self._obs_sumstat = np.array(self._stat_calc(self._obs_data))
 
         self._inference_scheme = inference_scheme
 
@@ -316,17 +316,21 @@ class ABCBase:
             initializer = None
             initargs = None
 
-        with ProcessPool(n_jobs) as pool:
+        if n_jobs == 1:
+            sum_stats = self._pilot_study(tasks[0], 0, seeds[0])
 
-            results = pool.map(self._pilot_study,
-                               tasks,
-                               range(n_jobs),
-                               seeds,
-                               initializer=initializer,
-                               initargs=initargs
-                               )
+        else:
+            with ProcessPool(n_jobs) as pool:
 
-        sum_stats = np.concatenate(results, axis=0)
+                results = pool.map(self._pilot_study,
+                                   tasks,
+                                   range(n_jobs),
+                                   seeds,
+                                   initializer=initializer,
+                                   initargs=initargs
+                                   )
+
+            sum_stats = np.concatenate(results, axis=0)
 
         if stat_scale is None:
             self._stat_scale = 1.
@@ -385,7 +389,8 @@ class ABCBase:
 
     def _sd(self, a, axis=0):
         """Standard deviation from the mean"""
-        a = a.astype(np.float64)
+        a = np.asarray(a, dtype=float)
+        #a = a.astype(np.float64)
         a[a == np.inf] = np.NaN
         sd = np.sqrt(np.nanmean(
             np.abs(a - np.nanmean(a, axis=axis))**2, axis=axis))
@@ -415,6 +420,8 @@ class ABCBase:
         for i in t_range:
             next_gen = advance_PRNG_state(seed, i)
             thetas = [prior.rvs(seed=next_gen) for prior in self._priors]
+            sim = self._simulator(g=5, eta=2)
+
             sim = self._simulator(*thetas)
             if isinstance(sim, tuple):
                 sim_sumstat = self._stat_calc(*sim)
@@ -488,7 +495,10 @@ class ABCBase:
 
         # data (design matrix)
         X = copy.deepcopy(self._sum_stats)
-        X /= self._stat_scale
+        #X /= self._stat_scale
+
+        self._factor = self._stat_weight / self._stat_scale
+        X *= self._factor
 
         if X.ndim == 1:
             X = X.reshape(-1, 1)
@@ -514,11 +524,13 @@ class ABCBase:
 
     def _gaussian_kernel(self, d, h):
         """Gaussian smoothing kernel function"""
-        return 1 / (h * np.sqrt(2 * np.pi)) * np.exp(-0.5 * (d * d) / (h * h))
+        # return 1 / (h * np.sqrt(2 * np.pi)) * np.exp(-0.5 * (d * d) / (h * h))
+        return np.exp(-0.5 * (d * d) / (h * h))
 
     def _epkov_kernel(self, d, h):
         """Epanechnikov smoothing kernel function"""
-        return 0.75 / h * (1.0 - (d * d) / (h * h)) * (d < h)
+        # return 0.75 / h * (1.0 - (d * d) / (h * h)) * (d < h)
+        return (1.0 - (d * d) / (h * h)) * (d < h)
 
     def _lra(self, X, y):
         """Linear regression adjustment"""
@@ -559,8 +571,22 @@ class ABCBase:
         beta = coef[1:]
 
         # Adjust posterior samples
+        '''
         correction = ((self._sum_stats / self._stat_scale) -
                       (self._obs_sumstat / self._stat_scale)) @ beta
+        '''
+
+        s_sim = self._sum_stats * self._factor
+        s_obs = self._obs_sumstat * self._factor
+        correction = (s_sim - s_obs) @ beta
+
+        ####################
+        # REMOVE THESE LINES AFTER DEBUG
+        #alpha_exp = np.exp(alpha)
+        # print(f"{alpha=}")
+        # print(f"{alpha_exp=}")
+        ###########
+        ###########
 
         if self._transform:
             self._samples = np.exp(np.log(self._original_samples) - correction)
