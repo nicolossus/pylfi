@@ -5,8 +5,8 @@ Welcome to pyLFI's documentation!
 :Release: |version|
 :Date: |today|
 
-pyLFI is a Python toolbox for likelihood-free inference (LFI) for estimating
-the posterior distributions of model parameters.
+``pyLFI`` is a Python toolbox using likelihood-free inference (LFI) for
+estimating the posterior distributions over model parameters.
 
 .. toctree::
    :maxdepth: 2

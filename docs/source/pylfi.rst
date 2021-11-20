@@ -5,7 +5,7 @@
 API Reference
 =============
 
-This reference gives details about the API of modules, classes and functions included in pyLFI.
+This reference gives details about the API of modules, classes and functions included in ``pyLFI``.
 
 :mod:`pylfi.density_estimation`: Density estimation
 ===================================================
