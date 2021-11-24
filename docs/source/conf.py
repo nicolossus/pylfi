@@ -90,12 +90,12 @@ plot_html_show_source_link = False
 # import pandas as pd"""
 
 # -- Sphinx gallery
-
+"""
 sphinx_gallery_conf = {
     'examples_dirs': ['../examples', '../tutorials'],
     'gallery_dirs': ['auto_examples']
 }
-
+"""
 
 # -- Autodoc
 #
@@ -189,7 +189,7 @@ pygments_style = 'sphinx'
 #
 html_theme = "pydata_sphinx_theme"
 
-htmlhelp_basename = 'neuromodelsdoc'
+htmlhelp_basename = 'pylfidoc'
 
 html_context = {
     "display_github": True,
