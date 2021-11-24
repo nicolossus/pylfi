@@ -13,9 +13,34 @@ from pylfi.utils import (advance_PRNG_state, check_and_set_jobs,
                          setup_logger)
 from tqdm.auto import tqdm
 
+VALID_STAT_SCALES = ["sd", "mad"]
+VALID_KERNELS = ["gaussian", "epkov"]
+
+
+"""
+Args:
+    simulator: A function that takes parameters $\theta$ and maps them to
+        simulations, or observations, `x`, $\mathrm{sim}(\theta)\to x$. Any
+        regular Python callable (i.e. function or class with `__call__` method)
+        can be used.
+    prior: A probability distribution that expresses prior knowledge about the
+        parameters, e.g. which ranges are meaningful for them. Any
+        object with `.log_prob()`and `.sample()` (for example, a PyTorch
+        distribution) can be used.
+    distance: Distance function to compare observed and simulated data. Can be
+        a custom function or one of `l1`, `l2`, `mse`.
+    num_workers: Number of parallel workers to use for simulations.
+    simulation_batch_size: Number of parameter sets that the simulator
+        maps to data x at once. If None, we simulate all parameter sets at the
+        same time. If >= 1, the simulator has to process data of shape
+        (simulation_batch_size, parameter_dimension).
+    show_progress_bars: Whether to show a progressbar during simulation and
+        sampling.
+"""
+
 
 class PilotStudyMissing(Exception):
-    """Failed attempt at accessing pilot study.
+    r"""Failed attempt at accessing pilot study.
 
     A call to the pilot_study method must be carried out first.
     """
@@ -23,7 +48,7 @@ class PilotStudyMissing(Exception):
 
 
 class SamplingNotPerformed(Exception):
-    """Failed attempt at accessing posterior samples.
+    r"""Failed attempt at accessing posterior samples.
 
     A call to the sample method must be carried out first.
     """
@@ -31,7 +56,7 @@ class SamplingNotPerformed(Exception):
 
 
 class MissingParameter(Exception):
-    """Failed attempt at accessing hyperparameter value.
+    r"""Failed attempt at accessing hyperparameter value.
 
     A call to a method where the attribute is set must
     be carried out first.
@@ -39,15 +64,28 @@ class MissingParameter(Exception):
     pass
 
 
-VALID_STAT_SCALES = ["sd", "mad"]
-VALID_KERNELS = ["gaussian", "epkov"]
-
-
 class ABCBase:
-    """
-    ABC base class.
+    r"""Base class for Approximate Bayesian Computation algorithms.
 
-
+    Parameters
+    ----------
+    observation : :term:`array_like`
+        The observed data :math:`y_\mathrm{obs}`.
+    simulator : :obj:`callable`
+        The simulator model parametrized by unknown model parameters
+        :math:`\theta`. Any regular ``Python`` :obj:`callable`, i.e., function
+        or class with ``__call__`` method can be used.
+    stat_calc : :obj:`callable`
+        Summary statistics calculator. Must take the return from ``simulator``
+        as arguments. Any regular ``Python`` :obj:`callable`, i.e., function
+        or class with ``__call__`` method can be used.
+    priors : :obj:`list` of :obj:`pylfi.Prior`
+        List containing the priors for the unknown model parameters. The order
+        must be the same as the order of positional arguments in ``simulator``.
+    inference_scheme : :obj:`str`
+        To be passed by sub-class in call to parent constructor.
+    log : :obj:`bool`
+        Whether logger should be displayed or not. Default: `True`.
     """
 
     def __init__(
@@ -88,15 +126,17 @@ class ABCBase:
     @abstractmethod
     def sample(self):
         """To be overwritten by sub-class: should implement sampling from
-        inference scheme and (optionally) return journal.
+        inference scheme and optionally return journal via the boolean
+        ``return_journal`` keyword argument.
 
         The sample method needs specific attribute names. See `RejABC` class
         for an example.
 
         Returns
         -------
-        pylfi.journal
-            Journal
+        pylfi.Journal
+            Journal with results and information created by the run of
+            inference schemes.
         """
 
         raise NotImplementedError
@@ -109,8 +149,9 @@ class ABCBase:
 
         Returns
         -------
-        pylfi.journal
-            Journal
+        pylfi.Journal
+            Journal with results and information created by the run of
+            inference schemes.
         """
 
         raise NotImplementedError
@@ -234,7 +275,7 @@ class ABCBase:
         """Perform pilot study.
 
         The pilot study runs the simulator `n_sim` times and sets the
-        threshold parameter `epsilon` automatically as the p-quantile of
+        threshold parameter `epsilon` automatically as the q-quantile of
         simulated distances. For instance, the 0.5-quantile (the median)
         will give a threshold that accepts roughly (because the threshold
         will be an estimate) 50% of the simulations.
@@ -280,7 +321,7 @@ class ABCBase:
 
         if quantile is None:
             msg = ("quantile must be passed. The pilot study sets the "
-                   "accept/reject threshold as the provided p-quantile of the "
+                   "accept/reject threshold as the provided q-quantile of the "
                    "distances.")
             raise ValueError(msg)
 
@@ -420,8 +461,6 @@ class ABCBase:
         for i in t_range:
             next_gen = advance_PRNG_state(seed, i)
             thetas = [prior.rvs(seed=next_gen) for prior in self._priors]
-            sim = self._simulator(g=5, eta=2)
-
             sim = self._simulator(*thetas)
             if isinstance(sim, tuple):
                 sim_sumstat = self._stat_calc(*sim)
@@ -494,11 +533,18 @@ class ABCBase:
             self.logger.info(f"Perform {method} regression adjustment.")
 
         # data (design matrix)
+        '''
         X = copy.deepcopy(self._sum_stats)
         #X /= self._stat_scale
 
         self._factor = self._stat_weight / self._stat_scale
         X *= self._factor
+        '''
+        self._factor = self._stat_weight / self._stat_scale
+
+        ssim = copy.deepcopy(self._sum_stats) * self._factor
+        sobs = copy.deepcopy(self._obs_sumstat) * self._factor
+        X = ssim - sobs
 
         if X.ndim == 1:
             X = X.reshape(-1, 1)
@@ -578,6 +624,9 @@ class ABCBase:
 
         s_sim = self._sum_stats * self._factor
         s_obs = self._obs_sumstat * self._factor
+
+        #s_sim = self._sum_stats
+        #s_obs = self._obs_sumstat
         correction = (s_sim - s_obs) @ beta
 
         ####################
