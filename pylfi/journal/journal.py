@@ -5,12 +5,10 @@ import os
 import pickle
 import sys
 
-import arviz as az
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import xarray as xr
 from matplotlib import gridspec
 
 plt.rc('text', usetex=True)
@@ -117,66 +115,6 @@ class Journal:
         self._df = pd.DataFrame(self._df)
         if self._df_plot_exist:
             self._df_plot = pd.DataFrame(self._df_plot)
-
-    def _write_idata(self, samples, n_samples, n_chains):
-        if n_chains == 1:
-            n_draws = n_samples
-            for i, param_name in enumerate(self._param_names):
-                self._idata[param_name] = (["chain", "draw"], samples[:, i])
-                if self._idata_plot_exist:
-                    self._idata_plot[self._param_names_tex[i]] = (
-                        ["chain", "draw"], samples[:, i])
-        else:
-            n_draws = samples.shape[1]
-            for i, param_name in enumerate(self._param_names):
-                self._idata[param_name] = (["chain", "draw"], samples[:, :, i])
-                if self._idata_plot_exist:
-                    self._idata_plot[self._param_names_tex[i]] = (
-                        ["chain", "draw"], samples[:, :, i])
-
-        self._idata = az.convert_to_inference_data(
-            self._idata,
-            coords={
-                "chain": np.arange(n_chains),
-                "draws": np.arange(n_draws)
-            },
-            observed_data=self._observation
-        )
-
-        if self._idata_plot_exist:
-            self._idata_plot = az.convert_to_inference_data(
-                self._idata_plot,
-                coords={
-                    "chain": np.arange(n_chains),
-                    "draws": np.arange(n_draws)
-                },
-                observed_data=self._observation
-            )
-
-    def _idata(self):
-        for i, param_name in enumerate(parameter_names):
-            idata_posterior[param_name] = (
-                ["chain", "draw"], [posterior_samples[:, i]])
-        coords = {"draw": np.arange(1, N + 1), "chain": np.arange(n_chains)}
-        idata_coords = {"chain": chains,
-                        "draw": np.arange(n_samples, dtype=int)}
-
-        # print(idata_posterior)
-        # print(idata_coords)
-
-        idata = xr.Dataset(idata_posterior, idata_coords)
-        print(idata)
-        # ppc - need to add simulator
-        # idata_plot with tex names (see Prior class for extraction)
-        ppc = pm.sample_posterior_predictive(..., keep_size=True)
-        # below can perhaps be used in method for plotting ppc
-        az.concat(idata, az.from_dict(posterior_predictive=ppc), inplace=True)
-
-        '''
-        Stacking chains and draws is often useful when one doesn't care about
-        which chain a draw is coming from. This is currently possible by doing
-        idata.posterior.stack(sample=("chain", "draw"))
-        '''
 
     def _check_journal_status(self):
         """Check if journal has been initiated by an inference scheme.
@@ -434,11 +372,6 @@ class Journal:
             ax=ax,
             **kwargs
         )
-
-    @property
-    def idata(self):
-        self._check_journal_status()
-        return self._idata
 
     @property
     def df(self):

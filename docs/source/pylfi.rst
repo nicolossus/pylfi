@@ -27,6 +27,7 @@ Approximate Bayesian Computation
    inferences.ABCBase
    inferences.RejABC
    inferences.MCMCABC
+   ABCBase
 
 :mod:`pylfi.models`: Mechanistic and probabilistic models
 =========================================================
