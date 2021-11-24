@@ -17,6 +17,11 @@ plt.rc('text', usetex=True)
 
 
 class Journal:
+    r""" Journal class.
+
+    Journal with results and information created by the run of
+    inference schemes.
+    """
 
     def __init__(self):
         # list of parameter names (the 'name' kw from Prior object)
