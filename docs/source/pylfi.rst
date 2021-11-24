@@ -57,14 +57,6 @@ Mechanistic models
   :toctree: generated/
   :template: class.rst
 
-:mod:`pylfi.plotting`: Plotting procedures
-==========================================
-
-.. automodule:: pylfi.plotting
-   :no-members:
-   :no-inherited-members:
-
-
 :mod:`pylfi.priors`: Prior distributions
 ========================================
 

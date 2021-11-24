@@ -12,4 +12,10 @@ sphinx-prompt
 https://github.com/AaltoSciComp/sphinx_rtd_theme_ext_color_contrast/archive/master.zip
 pydata-sphinx-theme
 matplotlib
-numpy 
+numpy
+scipy
+pandas
+seaborn
+pathos
+tqdm
+colorlog
