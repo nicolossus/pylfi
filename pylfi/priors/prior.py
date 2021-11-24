@@ -4,7 +4,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
-import seaborn as sns
 
 
 class Prior:
@@ -13,19 +12,26 @@ class Prior:
 
     Parameters
     ----------
-    distr_name : str
+    distr_name : :obj:`str`
         Any distribution from `scipy.stats` as a string.
     params:
         Parameters of the prior distribution. Typically these would be
         `shape` parameters or `loc` and `scale` passed as positional
         arguments.
+    name : :obj:`str`
+        Name of the unknown parameter, which is used to keep track and access
+        the parameter in the sampling algorithms. Default: `None`.
+    tex : :obj:`str`, optional
+        LaTeX typesetting for the parameter name. `pyLFI` includes procedures
+        for automatically plotting priors and posteriors, and will use the `tex`
+        name of the parameter as axis labels if provided. Default: `None`.
     kwargs:
         kwargs are passed to the scipy distribution methods. Typically
         these would be `loc` and `scale`.
 
     Notes
     -----
-    The parameters of the `scipy` distributions (typically `loc` and `scale`)
+    The parameters of the `SciPy` distributions (typically `loc` and `scale`)
     must be given as positional arguments.
 
     Many algorithms (e.g. MCMC) also require a `pdf` method for the
@@ -66,14 +72,14 @@ class Prior:
 
         Parameters
         ----------
-        size : int, tuple or None, optional
+        size : {:obj:`int`, :obj:`tuple` or ``None``}, optional
             Output size of a single random draw.
-        seed : int, optional
-            Seed
+        seed : :obj:`int`, optional
+            Seed.
 
         Returns
         -------
-        rvs : ndarray
+        rvs : :term:`ndarray`
             Random variables
         """
 
@@ -91,13 +97,13 @@ class Prior:
 
         Parameters
         ----------
-        x : array_like
-            Quantiles
+        x : :term:`array_like`
+            Evaluation points.
 
         Returns
         -------
-        pdf : ndarray
-            pdf evaluated at x
+        pdf : :term:`ndarray`
+            pdf evaluated at ``x``.
         """
 
         pdf = self.distr.pdf(x, *self.params, **self.kwargs)
@@ -110,13 +116,13 @@ class Prior:
 
         Parameters
         ----------
-        x : array_like
-            Quantiles
+        x : :term:`array_like`
+            Evaluation points.
 
         Returns
         -------
-        logpdf : ndarray
-            Log of pdf evaluated at x
+        logpdf : :term:`ndarray`
+            Log of pdf evaluated at ``x``.
         """
 
         logpdf = self.distr.logpdf(x, *self.params, **self.kwargs)
@@ -129,13 +135,13 @@ class Prior:
 
         Parameters
         ----------
-        x : array_like
-            Quantiles
+        x : :term:`array_like`
+            Evaluation points.
 
         Returns
         -------
-        pmf : ndarray
-            pmf evaluated at x
+        pmf : :term:`ndarray`
+            pmf evaluated at ``x``.
         """
 
         pmf = self.distr.pmf(x, *self.params, **self.kwargs)
@@ -166,19 +172,29 @@ class Prior:
 
         Parameters
         ----------
-        x : array_like
-            Quantiles
+        x : :term:`array_like`
+            Evaluation points.
+        color : :obj:`str`, optional
+            Set the color of the line. Default: `C0`.
+        facecolor : :obj:`str`, optional
+            Set the face color of area under the curve. Default: `lightblue`.
+        alpha : :obj:`float`, optional
+            Set the alpha value used for blending. Must be within the 0-1
+            range. Default: `0.5`.
         ax : Axes, optional
-            Axes object. Default is None.
-        show : bool, optional
-            Calls plt.show() if True. Default is True.
-        filename : str, optional
-            Saves the figure as filename if provided. Default is None.
-        dpi : int, optional
-            Set figure dpi, default=100.
+            Axes object. Default: `None`.
+
         """
         # TODO: hasattr pdf or pmf
-        pdf = self.pdf(x)
+        if hasattr(self.distr, 'pdf'):
+            pxf = self.pdf(x)
+            y_handle = 'Density'
+        elif hasattr(self.distr, 'pmf'):
+            pxf = self.pmf(x)
+            y_handle = 'Probability'
+        else:
+            msg = (f'{self.distr} does not have a pdf or pmf method.')
+            raise AttributeError(msg)
 
         if self.tex is not None:
             x_handle = self.tex
@@ -188,10 +204,9 @@ class Prior:
         if ax is None:
             ax = plt.gca()
 
-        ax.plot(x, pdf, color=color, **kwargs)
-        ax.fill_between(x, pdf, facecolor=facecolor, alpha=alpha)
-        ax.set_ylabel('Density')
-        ax.set_xlabel(x_handle)
+        ax.plot(x, pxf, color=color, **kwargs)
+        ax.fill_between(x, pxf, facecolor=facecolor, alpha=alpha)
+        ax.set(xlabel=x_handle, ylabel=y_handle)
 
 
 if __name__ == "__main__":
@@ -199,7 +214,7 @@ if __name__ == "__main__":
     dist = 'norm'
     theta = Prior(dist, loc=0, scale=1, name='theta')
     print(theta.rvs(1, seed=42))
-    x = np.linspace(-0.1, 1.1, 1000)
+    x = np.linspace(-4, 4, 1000)
 
     theta.plot_prior(x)
 

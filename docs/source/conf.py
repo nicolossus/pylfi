@@ -13,6 +13,7 @@
 import os
 import sys
 
+import sphinx
 import sphinx_gallery
 from matplotlib.sphinxext import plot_directive
 
@@ -51,6 +52,7 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'sphinxext.github',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
     # 'sphinx_gallery.gen_gallery',
@@ -136,6 +138,7 @@ intersphinx_mapping = {
     ),
 }
 
+
 # -- Inheritance diagram
 #
 inheritance_node_attrs = dict(
@@ -181,6 +184,8 @@ add_function_parentheses = True
 # The name of the Pygments (syntax highlighting) style to use.
 #
 pygments_style = 'sphinx'
+
+default_role = 'obj'
 
 # -- Options for HTML output -------------------------------------------------
 
