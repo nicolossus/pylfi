@@ -27,7 +27,7 @@ author = 'Nicolai Haug'
 
 # Get version
 about = {}
-with open(os.path.join("..", "pylfi", "__version__.py")) as f:
+with open(os.path.join("..", "..", "pylfi", "__version__.py")) as f:
     exec(f.read(), about)
 
 # The version info for the project you're documenting, acts as replacement for
