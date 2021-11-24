@@ -52,7 +52,6 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinxext.github',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
     # 'sphinx_gallery.gen_gallery',
