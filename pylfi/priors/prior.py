@@ -7,36 +7,30 @@ import scipy.stats as stats
 
 
 class Prior:
-    r"""
-    Initialize a Prior.
+    r"""Initialize a prior.
+
+    In the Bayesian paradigm, all available information about an unknown
+    parameter is incorporated in a prior probability distribution, which
+    describes the range of possible parameter values.
 
     Parameters
     ----------
-    distr_name : :obj:`str`
+    distr_name : `str`
         Any distribution from `scipy.stats` as a string.
     params:
         Parameters of the prior distribution. Typically these would be
-        `shape` parameters or `loc` and `scale` passed as positional
+        ``shape`` parameters or ``loc`` and ``scale`` passed as positional
         arguments.
-    name : :obj:`str`
+    name : `str`
         Name of the unknown parameter, which is used to keep track and access
-        the parameter in the sampling algorithms. Default: `None`.
-    tex : :obj:`str`, optional
-        LaTeX typesetting for the parameter name. `pyLFI` includes procedures
-        for automatically plotting priors and posteriors, and will use the `tex`
-        name of the parameter as axis labels if provided. Default: `None`.
+        the parameter in the sampling algorithms. Default: ``None``.
+    tex : `str`, optional
+        LaTeX typesetting for the parameter name. ``pyLFI`` includes procedures
+        for automatically plotting priors and posteriors, and will use the ``tex``
+        name of the parameter as axis labels if provided. Default: ``None``.
     kwargs:
         kwargs are passed to the scipy distribution methods. Typically
-        these would be `loc` and `scale`.
-
-    Notes
-    -----
-    The parameters of the `SciPy` distributions (typically `loc` and `scale`)
-    must be given as positional arguments.
-
-    Many algorithms (e.g. MCMC) also require a `pdf` method for the
-    distribution. In general the definition of the distribution is a
-    subset of `scipy.stats.rv_continuous`.
+        these would be ``loc`` and ``scale``.
     """
 
     def __init__(self, distr_name, *params, name=None, tex=None, **kwargs):
@@ -71,15 +65,15 @@ class Prior:
 
         Parameters
         ----------
-        size : {:obj:`int`, :obj:`tuple` or ``None``}, optional
-            Output size of a single random draw.
-        seed : :obj:`int`, optional
-            Seed.
+        size : {`int`, `tuple`}, optional
+            Output size of a single random draw. Default: ``None``.
+        seed : `int`, optional
+            Seed for reproducibility.
 
         Returns
         -------
-        rvs : :term:`ndarray`
-            Random variables
+        rvs : `numpy.ndarray`
+            Random variables.
         """
 
         rvs = self.distr.rvs(*self.params,
@@ -101,7 +95,7 @@ class Prior:
 
         Returns
         -------
-        pdf : :term:`ndarray`
+        pdf : `numpy.ndarray`
             pdf evaluated at ``x``.
         """
 
@@ -120,7 +114,7 @@ class Prior:
 
         Returns
         -------
-        logpdf : :term:`ndarray`
+        logpdf : `numpy.ndarray`
             Log of pdf evaluated at ``x``.
         """
 
@@ -139,7 +133,7 @@ class Prior:
 
         Returns
         -------
-        pmf : :term:`ndarray`
+        pmf : `numpy.ndarray`
             pmf evaluated at ``x``.
         """
 
@@ -186,26 +180,26 @@ class Prior:
         ax=None,
         **kwargs
     ):
-        r"""Plot prior pdf or pmf evaluated at x.
+        r"""Plot prior pdf or pmf evaluated at ``x``.
 
         Parameters
         ----------
         x : :term:`array_like`
             Evaluation points.
-        color : :obj:`str`, optional
-            Set the color of the line. Default: `C0`.
-        facecolor : :obj:`str`, optional
-            Set the face color of area under the curve. Default: `lightblue`.
-        alpha : :obj:`float`, optional
-            Set the alpha value used for blending. Must be within the 0-1
-            range. Default: `0.5`.
+        color : `str`, optional
+            Set the color of the line. Default: ``C0``.
+        facecolor : `str`, optional
+            Set the face color of area under the curve. Default: ``lightblue``.
+        alpha : `float`, optional
+            Set the alpha value used for blending the face color. Must be
+            within the 0-1 range. Default: ``0.5``.
         ax : `matplotlib.axes.Axes`, optional
             Pre-existing axes for the plot. Otherwise, call
             `matplotlib.pyplot.gca` internally.
         kwargs:
             kwargs are passed to `matplotlib.pyplot.plot`.
         """
-        # TODO: hasattr pdf or pmf
+
         if hasattr(self.distr, 'pdf'):
             pxf = self.pdf(x)
             y_handle = 'Density'
