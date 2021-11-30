@@ -91,12 +91,12 @@ plot_html_show_source_link = False
 # import pandas as pd"""
 
 # -- Sphinx gallery
-"""
+#
 sphinx_gallery_conf = {
-    'examples_dirs': ['../examples', '../tutorials'],
+    'examples_dirs': ['../../examples'],
     'gallery_dirs': ['auto_examples']
 }
-"""
+
 
 # -- Autodoc
 #
