@@ -148,7 +148,12 @@ class Prior:
 
     @property
     def name(self):
-        """Parameter name."""
+        """Parameter name.
+
+        Returns
+        -------
+        `str`
+        """
         return self._name
 
     @property
@@ -159,18 +164,16 @@ class Prior:
         Returns
         -------
         `str`
-            Name of the `scipy.stats` distribution.
         """
         return self._distr_name
 
     @property
     def tex(self):
-        """LaTeX typeset parameter name.
+        """Parameter name with LaTeX typesetting.
 
         Returns
         -------
-        tex : :obj:`str`
-            Parameter name with LaTeX typesetting.
+        `str`
         """
         return self._tex
 
@@ -196,7 +199,7 @@ class Prior:
         alpha : :obj:`float`, optional
             Set the alpha value used for blending. Must be within the 0-1
             range. Default: `0.5`.
-        ax : `Axes`, `.Axes`, optional
+        ax : `Axes`, `~.Axes`, optional
             `matplotlib.axes.Axes` object. Default: `None`.
         kwargs:
             kwargs are passed to `matplotlib.pyplot.plot`.
