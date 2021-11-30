@@ -149,10 +149,10 @@ class ABCBase:
             Simulated summary statistic(s).
         s_obs : {:obj:`int`, :obj:`float`}, :term:`array_like`
             Observed summary statistic(s).
-        weight: {:obj:`int`, :obj:`float`}, :term:`ndarray`, optional
+        weight : {:obj:`int`, :obj:`float`}, :term:`ndarray`, optional
             Importance weight(s) of summary statistic(s). Should sum to 1.
             Default: `1.`.
-        scale: {:obj:`int`, :obj:`float`}, :term:`ndarray`, optional
+        scale : {:obj:`int`, :obj:`float`}, :term:`ndarray`, optional
             Scale weight(s) of summary statistic(s). Default: `1.`.
 
         Returns

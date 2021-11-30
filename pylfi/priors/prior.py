@@ -148,14 +148,28 @@ class Prior:
 
     @property
     def name(self):
+        """Parameter name."""
         return self._name
 
     @property
     def distr_name(self):
+        """
+        Returns
+        -------
+        distr_name : str
+            Name of the `scipy.stats` distribution.
+        """
         return self._distr_name
 
     @property
     def tex(self):
+        """LaTeX typeset parameter name.
+
+        Returns
+        -------
+        tex : str
+            Parameter name with LaTeX typesetting.
+        """
         return self._tex
 
     def plot_prior(
@@ -180,8 +194,8 @@ class Prior:
         alpha : :obj:`float`, optional
             Set the alpha value used for blending. Must be within the 0-1
             range. Default: `0.5`.
-        ax : :obj:`Axes`, optional
-            Matplotlib Axes object. Default: `None`.
+        ax : `Axes`, `.Axes`, optional
+            `matplotlib.axes.Axes` object. Default: `None`.
         kwargs:
             kwargs are passed to `matplotlib.pyplot.plot`.
         """
@@ -215,8 +229,5 @@ if __name__ == "__main__":
     theta = Prior(dist, loc=0, scale=1, name='theta')
     print(theta.rvs(1, seed=42))
     x = np.linspace(-4, 4, 1000)
-
     theta.plot_prior(x)
-
-    #plt.plot(x, theta.logpdf(x))
     plt.show()
