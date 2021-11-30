@@ -49,21 +49,22 @@ class ABCBase:
     ----------
     observation : :term:`array_like`
         The observed data :math:`y_\mathrm{obs}`.
-    simulator : :obj:`callable`
+    simulator : `callable`
         The simulator model parametrized by unknown model parameters
-        :math:`\theta`. Any regular ``Python`` :obj:`callable`, i.e., function
+        :math:`\theta`. Any regular ``Python`` `callable`, i.e., function
         or class with ``__call__`` method can be used.
-    stat_calc : :obj:`callable`
+    stat_calc : `callable`
         Summary statistics calculator. Must take the return from ``simulator``
-        as arguments. Any regular ``Python`` :obj:`callable`, i.e., function
+        as arguments. Any regular ``Python`` `callable`, i.e., function
         or class with ``__call__`` method can be used.
-    priors : :obj:`list` of :obj:`pylfi.Prior`
+    priors : `list` of `.Prior`
         List containing the priors for the unknown model parameters. The order
         must be the same as the order of positional arguments in ``simulator``.
-    inference_scheme : :obj:`str`
-        To be passed by sub-class in call to parent constructor.
-    log : :obj:`bool`
-        Whether logger should be displayed or not. Default: `True`.
+    inference_scheme : `str`
+        Name of inference scheme. To be passed by sub-class in call to base
+        constructor.
+    log : `bool`
+        Whether logger should be displayed or not. Default: ``True``.
     """
 
     def __init__(
@@ -107,12 +108,12 @@ class ABCBase:
         inference scheme and optionally return journal via the boolean
         ``return_journal`` keyword argument.
 
-        The sample method needs specific attribute names. See `RejABC` class
+        The sample method needs specific attribute names. See `.RejABC` class
         for an example.
 
         Returns
         -------
-        pylfi.Journal
+        `.Journal`
             Journal with results and information created by the run of
             inference schemes.
         """
@@ -123,11 +124,11 @@ class ABCBase:
     def journal(self):
         """To be overwritten by sub-class: method to write and return journal.
 
-        See `RejABC` class for an example.
+        See `.RejABC` class for an example.
 
         Returns
         -------
-        pylfi.Journal
+        `.Journal`
             Journal with results and information created by the run of
             inference schemes.
         """
@@ -138,26 +139,26 @@ class ABCBase:
         """Weighted Euclidean distance.
 
         Computes the weighted Euclidean distance between two 1-D arrays
-        of summary statistics. The `weight` parameter can be set to weight
-        the importance of a summary statistic, whereas the `scale` parameter
+        of summary statistics. The ``weight`` parameter can be set to weight
+        the importance of a summary statistic, whereas the ``scale`` parameter
         can be used to scale particular summary statistics in order to avoid
         dominance.
 
         Parameters
         ----------
-        s_sim : {:obj:`int`, :obj:`float`}, :term:`array_like`
+        s_sim : {`int`, `float`}, :term:`array_like`
             Simulated summary statistic(s).
-        s_obs : {:obj:`int`, :obj:`float`}, :term:`array_like`
+        s_obs : {`int`, `float`}, :term:`array_like`
             Observed summary statistic(s).
-        weight : {:obj:`int`, :obj:`float`}, :term:`ndarray`, optional
+        weight : {`int`, `float`}, `numpy.ndarray`, optional
             Importance weight(s) of summary statistic(s). Should sum to 1.
-            Default: `1.`.
-        scale : {:obj:`int`, :obj:`float`}, :term:`ndarray`, optional
-            Scale weight(s) of summary statistic(s). Default: `1.`.
+            Default: ``1.0``.
+        scale : {`int`, `float`}, `numpy.ndarray`, optional
+            Scale weight(s) of summary statistic(s). Default: ``1.0``.
 
         Returns
         -------
-        distance : :obj:`float`
+        distance : `float`
             The weighted Euclidean distance between simulated and observed
             summary statistics.
         """
@@ -178,45 +179,47 @@ class ABCBase:
     def batches(self, n_samples, n_jobs, seed, force_equal=False):
         """Divide and conquer.
 
-        Divide the number of samples, `n_samples, between` `n_jobs` workers.
-        If the ABC algorithm uses Markov chains, then `n_jobs` is the number
-        chains. If `n_jobs` exceeds the number of available CPUs found by
-        `Pathos` (this might include hardware threads), `n_jobs` is set to the
-        number found by `Pathos`.
+        Divide the number of samples, ``n_samples``, between ``n_jobs`` workers.
+        If the ABC algorithm uses Markov chains, then ``n_jobs`` is the number
+        chains. If ``n_jobs`` exceeds the number of available CPUs found by
+        ``Pathos`` (this might include hardware threads), ``n_jobs`` is set to
+        the number found by ``Pathos``.
+
+        `Pathos <https://pathos.readthedocs.io/en/latest/pathos.html>`_
 
         The method also creates a seed for each worker based on the input seed.
-        This ensures reproducibility if wanted. If `seed=None`, the results
+        This ensures reproducibility if wanted. If ``seed=None``, the results
         will be stochastic between each run of the sampler.
 
-        When using Markov chains, the `force_equal` keyword must be set to
-        `True`, in order to enforce equal length of chains. The `n_samples`
+        When using Markov chains, the ``force_equal`` keyword must be set to
+        ``True``, in order to enforce equal length of chains. The ``n_samples``
         that results in equal chain lengths will be found internally and
-        returned. The corrected `n_samples` should be used downstream if
+        returned. The corrected ``n_samples`` should be used downstream if
         needed.
 
         Parameters
         ----------
-        n_samples : :obj:`int`
+        n_samples : `int`
             Number of (posterior) samples to draw.
-        n_jobs : :obj:`int`
-            Number of processes (workers). If `n_jobs=-1`, then `n_jobs` is
-            set to half of the CPUs found by `Pathos` (we assume half of the
+        n_jobs : `int`
+            Number of processes (workers). If ``n_jobs=-1``, then ``n_jobs`` is
+            set to half of the CPUs found by ``Pathos`` (we assume half of the
             CPUs are hardware threads only and ignore those).
-        seed : :obj:`int`
+        seed : `int`
             User-provided seed.
-        force_equal : :obj:`bool`, optional
-            If `True`, `n_samples` will be adjusted to enforce equal number
-            of tasks for each worker. Default: `False`.
+        force_equal : `bool`, optional
+            If ``True``, ``n_samples`` will be adjusted to enforce equal number
+            of tasks for each worker. Default: ``False``.
 
         Returns
         -------
-        n_samples : :obj:`int`
+        n_samples : `int`
             Possibly corrected number of samples (posterior draws).
-        n_jobs : :obj:`int`
+        n_jobs : `int`
             Possibly corrected number of processes (workers).
-        tasks : :obj:`int`
+        tasks : `int`
             The number of tasks for each parallel pool worker.
-        seeds : :obj:`list`
+        seeds : `list`
             Initial states for parallel pool workers.
         """
 
