@@ -17,12 +17,12 @@ import pylfi
 # keyword argument can be used to provide LaTeX typesetting for the parameter
 # name, which is used as axis label in `pyLFI`'s plotting procedures if
 # provided.
-theta_prior = pylfiPrior('norm',
-                         loc=0,
-                         scale=1,
-                         name='theta',
-                         tex=r'$\theta$'
-                         )
+theta_prior = pylfi.Prior('norm',
+                          loc=0,
+                          scale=1,
+                          name='theta',
+                          tex=r'$\theta$'
+                          )
 
 ###############################################################################
 # Sampling from the prior is done through the `.rvs` method. The `size` keyword
