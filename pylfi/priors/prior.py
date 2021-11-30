@@ -154,9 +154,11 @@ class Prior:
     @property
     def distr_name(self):
         """
+        Name of the `scipy.stats` distribution.
+
         Returns
         -------
-        distr_name : str
+        `str`
             Name of the `scipy.stats` distribution.
         """
         return self._distr_name
@@ -167,7 +169,7 @@ class Prior:
 
         Returns
         -------
-        tex : str
+        tex : :obj:`str`
             Parameter name with LaTeX typesetting.
         """
         return self._tex
