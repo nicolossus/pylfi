@@ -37,6 +37,28 @@ class Prior:
     Many algorithms (e.g. MCMC) also require a `pdf` method for the
     distribution. In general the definition of the distribution is a
     subset of `scipy.stats.rv_continuous`.
+
+    Examples
+    --------
+    .. plot::
+        import matplotlib.pyplot as plt
+        import pylfi
+
+        # Initialize a Gaussian prior
+        theta_prior = pylfi.Prior('norm',
+                                  loc=0,
+                                  scale=1,
+                                  name='theta',
+                                  tex=r'$\theta$'
+                                  )
+
+        # Sample from prior
+        theta_samples = theta_prior.rvs(size=10, seed=42)
+
+        # Plot prior
+        x = np.linspace(-4, 4, 1000)
+        theta_prior.plot_prior(x)
+        plt.show()
     """
 
     def __init__(self, distr_name, *params, name=None, tex=None, **kwargs):
@@ -199,7 +221,7 @@ class Prior:
         alpha : :obj:`float`, optional
             Set the alpha value used for blending. Must be within the 0-1
             range. Default: `0.5`.
-        ax : `Axes`, `~.Axes`, optional
+        ax : `Axes`, optional
             `matplotlib.axes.Axes` object. Default: `None`.
         kwargs:
             kwargs are passed to `matplotlib.pyplot.plot`.
@@ -230,9 +252,19 @@ class Prior:
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    dist = 'norm'
-    theta = Prior(dist, loc=0, scale=1, name='theta')
-    print(theta.rvs(1, seed=42))
+
+    # Initialize a Gaussian prior
+    theta_prior = Prior('norm',
+                        loc=0,
+                        scale=1,
+                        name='theta',
+                        tex=r'$\theta$'
+                        )
+
+    # Sample from prior
+    theta_samples = theta_prior.rvs(size=10, seed=42)
+
+    # Plot prior
     x = np.linspace(-4, 4, 1000)
-    theta.plot_prior(x)
+    theta_prior.plot_prior(x)
     plt.show()
