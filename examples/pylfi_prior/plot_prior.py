@@ -17,18 +17,18 @@ import pylfi
 # keyword argument can be used to provide LaTeX typesetting for the parameter
 # name, which is used as axis label in `pyLFI`'s plotting procedures if
 # provided.
-theta_prior = Prior('norm',
-                    loc=0,
-                    scale=1,
-                    name='theta',
-                    tex=r'$\theta$'
-                    )
+theta_prior = pylfiPrior('norm',
+                         loc=0,
+                         scale=1,
+                         name='theta',
+                         tex=r'$\theta$'
+                         )
 
 ###############################################################################
 # Sampling from the prior is done through the `.rvs` method. The `size` keyword
 # can be used to set the output size of the sample. The sampling procedures can
 # also be seeded through the `seed` keyword argument.
-theta_samples = theta_prior.rvs(size=10, seed=42)
+theta_prior.rvs(size=10, seed=42)
 
 ###############################################################################
 # The `~.plot_prior` method plots the prior pdf or pmf, depending on whether
@@ -36,4 +36,3 @@ theta_samples = theta_prior.rvs(size=10, seed=42)
 # :math:`x`.
 x = np.linspace(-4, 4, 1000)
 theta_prior.plot_prior(x)
-plt.show()
