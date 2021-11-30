@@ -36,8 +36,7 @@ class Prior:
 
     Many algorithms (e.g. MCMC) also require a `pdf` method for the
     distribution. In general the definition of the distribution is a
-    subset of `scipy.stats.rv_continuous`:
-    Scipy distributions: https://docs.scipy.org/doc/scipy-0.19.0/reference/stats.html
+    subset of `scipy.stats.rv_continuous`.
     """
 
     def __init__(self, distr_name, *params, name=None, tex=None, **kwargs):
@@ -168,7 +167,7 @@ class Prior:
         ax=None,
         **kwargs
     ):
-        r"""Plot prior PDF evaluated at x.
+        r"""Plot prior pdf or pmf evaluated at x.
 
         Parameters
         ----------
@@ -181,9 +180,10 @@ class Prior:
         alpha : :obj:`float`, optional
             Set the alpha value used for blending. Must be within the 0-1
             range. Default: `0.5`.
-        ax : Axes, optional
-            Axes object. Default: `None`.
-
+        ax : :obj:`Axes`, optional
+            Matplotlib Axes object. Default: `None`.
+        kwargs:
+            kwargs are passed to `matplotlib.pyplot.plot`.
         """
         # TODO: hasattr pdf or pmf
         if hasattr(self.distr, 'pdf'):
