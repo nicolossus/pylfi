@@ -54,7 +54,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
-    # 'sphinx_gallery.gen_gallery',
+    'sphinx_gallery.gen_gallery',
 ]
 
 # Add autodoc mock imports
