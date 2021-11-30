@@ -199,8 +199,9 @@ class Prior:
         alpha : :obj:`float`, optional
             Set the alpha value used for blending. Must be within the 0-1
             range. Default: `0.5`.
-        ax : `Axes`, :term:`Axes`, :term:`.Axes`, optional
-            `matplotlib.axes.Axes` object. Default: `None`.
+        ax : `matplotlib.axes.Axes`, optional
+            Pre-existing axes for the plot. Otherwise, call
+            `matplotlib.pyplot.gca()` internally.
         kwargs:
             kwargs are passed to `matplotlib.pyplot.plot`.
         """
