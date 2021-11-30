@@ -37,23 +37,6 @@ class Prior:
     Many algorithms (e.g. MCMC) also require a `pdf` method for the
     distribution. In general the definition of the distribution is a
     subset of `scipy.stats.rv_continuous`.
-
-    Examples
-    --------
-    .. plot::
-        import matplotlib.pyplot as plt
-        import pylfi
-
-        # Initialize a Gaussian prior
-        theta_prior = pylfi.Prior('norm', loc=0, scale=1, name='theta', tex=r'$\theta$')
-
-        # Sample from prior
-        theta_samples = theta_prior.rvs(size=10, seed=42)
-
-        # Plot prior
-        x = np.linspace(-4, 4, 1000)
-        theta_prior.plot_prior(x)
-        plt.show()
     """
 
     def __init__(self, distr_name, *params, name=None, tex=None, **kwargs):
