@@ -2,7 +2,7 @@
 =====================================================================
 Using the pyLFI Prior class
 =====================================================================
-Example usage of the `pylfi.Prior` class.
+Example usage of the `~.Prior` class.
 """
 
 import matplotlib.pyplot as plt
@@ -10,7 +10,7 @@ import numpy as np
 import pylfi
 
 ###############################################################################
-# Initialize a Gaussian prior over the parameter :math:`\theta`. The first
+# We initialize a Gaussian prior over the parameter :math:`\theta`. The first
 # positional argument can be any `scipy.stats` distribution passed as `str`.
 # Following positional and keyword arguments are distribution specific
 # (see `scipy.stats` documentation). The `name` keyword argument is required
@@ -27,8 +27,8 @@ theta_prior = pylfi.Prior('norm',
 
 ###############################################################################
 # Sampling from the prior is done through the `.rvs` method. The `size` keyword
-# can be used to set the output size of the sample. The sampling procedures can
-# also be seeded through the `seed` keyword argument.
+# can be used to set the output size of the sample. The sampling can also be
+# seeded through the `seed` keyword argument.
 theta_prior.rvs(size=10, seed=42)
 
 ###############################################################################
