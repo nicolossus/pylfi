@@ -81,6 +81,21 @@ Mechanistic models
     :no-members:
     :no-inherited-members:
 
+.. currentmodule:: pylfi
+
+.. autosummary::
+  :nosignatures:
+  :recursive:
+  :toctree: generated/
+
+  utils.setup_logger
+  utils.check_and_set_jobs
+  utils.distribute_workload
+  utils.generate_seed_sequence
+  utils.advance_PRNG_state
+  utils.sigmoid
+  utils.iqr
+
 :mod:`pylfi.journal`: Journal class
 ===================================
 
