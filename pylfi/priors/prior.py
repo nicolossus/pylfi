@@ -45,12 +45,7 @@ class Prior:
         import pylfi
 
         # Initialize a Gaussian prior
-        theta_prior = pylfi.Prior('norm',
-                                  loc=0,
-                                  scale=1,
-                                  name='theta',
-                                  tex=r'$\theta$'
-                                  )
+        theta_prior = pylfi.Prior('norm', loc=0, scale=1, name='theta', tex=r'$\theta$')
 
         # Sample from prior
         theta_samples = theta_prior.rvs(size=10, seed=42)
