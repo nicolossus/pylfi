@@ -6,6 +6,7 @@ Example usage of the `pylfi.Prior` class.
 """
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pylfi
 
 ###############################################################################
