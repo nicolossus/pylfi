@@ -20,6 +20,11 @@ estimating the posterior distributions over model parameters.
   getting_started
 
 .. toctree::
+  :maxdepth: 2
+
+  Example gallery <auto_examples/index>
+
+.. toctree::
    :maxdepth: 2
    :caption: API Reference
 
