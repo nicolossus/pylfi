@@ -201,7 +201,7 @@ class Prior:
             range. Default: `0.5`.
         ax : `matplotlib.axes.Axes`, optional
             Pre-existing axes for the plot. Otherwise, call
-            `matplotlib.pyplot.gca()` internally.
+            `matplotlib.pyplot.gca` internally.
         kwargs:
             kwargs are passed to `matplotlib.pyplot.plot`.
         """
