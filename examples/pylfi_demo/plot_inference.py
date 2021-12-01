@@ -24,6 +24,7 @@ pylfi.utils.rugplot(obs_data, pos=-0.0005, ax=ax, label='Observed data')
 ax.set(xlabel='x', ylabel='Density')
 ax.legend()
 
+'''
 ###############################################################################
 # We assume that the likelihood is unknown, and formulate a model to describe
 # the observed data. The model needs to be implemented as a Python `callable`,
@@ -75,3 +76,4 @@ x = np.linspace(159, 171, 1000)
 mu_prior.plot_prior(x, ax=axes[0])
 x = np.linspace(11, 20, 1000)
 sigma_prior.plot_prior(x, color='C1', facecolor='wheat', ax=axes[1])
+'''
