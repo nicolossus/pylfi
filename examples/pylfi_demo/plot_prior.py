@@ -2,7 +2,7 @@
 =====================================================================
 Using the pyLFI Prior class
 =====================================================================
-Example usage of the `~.Prior` class.
+Example usage of the `.Prior` class.
 """
 
 import matplotlib.pyplot as plt
