@@ -1,6 +1,7 @@
 # pyLFI
 
 [![PyPI version](https://badge.fury.io/py/pylfi.svg)](https://badge.fury.io/py/pylfi)
+[![python compatibility](https://img.shields.io/pypi/pyversions/pylfi.svg)](https://pypi.python.org/pypi/pylfi)
 [![Documentation Status](https://readthedocs.org/projects/pylfi/badge/?version=latest)](https://pylfi.readthedocs.io/en/latest/?badge=latest)
 [![Tests](https://github.com/nicolossus/pylfi/workflows/Tests/badge.svg?branch=main)](https://github.com/nicolossus/pylfi/actions)
 [![GitHub license](https://img.shields.io/github/license/nicolossus/pylfi)](https://github.com/nicolossus/pylfi/blob/pylfi/LICENSE)
@@ -30,9 +31,8 @@
 ## Documentation
 Documentation can be found at [pylfi.readthedocs.io](https://pylfi.readthedocs.io/).
 
-<!--## Getting started
+## Getting started
 Check out the [Examples gallery](https://pylfi.readthedocs.io/en/latest/auto_examples/index.html) in the documentation.
--->
 
 ## Automated build and test
 The repository uses continuous integration (CI) workflows to build and test the project directly with GitHub Actions. Tests are provided in the [`tests`](tests) folder. Run tests locally with `pytest`:
