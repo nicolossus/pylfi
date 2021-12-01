@@ -27,36 +27,6 @@ Approximate Bayesian Computation
    inferences.ABCBase
    inferences.RejABC
    inferences.MCMCABC
-   ABCBase
-
-:mod:`pylfi.models`: Mechanistic and probabilistic models
-=========================================================
-
-.. automodule:: pylfi.models
-    :no-members:
-    :no-inherited-members:
-
-Probabilistic models
---------------------
-.. currentmodule:: pylfi
-
-.. autosummary::
-   :nosignatures:
-   :recursive:
-   :toctree: generated/
-   :template: class.rst
-
-   models.SimpleGaussian
-
-Mechanistic models
-------------------
-.. currentmodule:: pylfi
-
-.. autosummary::
-  :nosignatures:
-  :recursive:
-  :toctree: generated/
-  :template: class.rst
 
 :mod:`pylfi.priors`: Prior distributions
 ========================================
@@ -88,13 +58,10 @@ Mechanistic models
   :recursive:
   :toctree: generated/
 
-  utils.setup_logger
   utils.check_and_set_jobs
   utils.distribute_workload
   utils.generate_seed_sequence
   utils.advance_PRNG_state
-  utils.sigmoid
-  utils.iqr
 
 :mod:`pylfi.journal`: Journal class
 ===================================
