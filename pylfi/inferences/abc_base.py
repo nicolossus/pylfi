@@ -104,25 +104,20 @@ class ABCBase:
 
     @abstractmethod
     def sample(self):
-        """To be overwritten by sub-class: should implement sampling from
-        inference scheme and optionally return journal via the boolean
+        r"""To be overwritten by sub-class: should implement sampling from
+        inference scheme and optionally return `.Journal` via the boolean
         ``return_journal`` keyword argument.
 
         The sample method needs specific attribute names. See `.RejABC` class
         for an example.
-
-        Returns
-        -------
-        `.Journal`
-            Journal with results and information created by the run of
-            inference schemes.
         """
 
         raise NotImplementedError
 
     @abstractmethod
     def journal(self):
-        """To be overwritten by sub-class: method to write and return journal.
+        r"""To be overwritten by sub-class: method to write and return
+        `.Journal` instance.
 
         See `.RejABC` class for an example.
 
@@ -136,7 +131,7 @@ class ABCBase:
         raise NotImplementedError
 
     def distance(self, s_sim, s_obs, weight=1., scale=1.):
-        """Weighted Euclidean distance.
+        r"""Weighted Euclidean distance.
 
         Computes the weighted Euclidean distance between two 1-D arrays
         of summary statistics. The ``weight`` parameter can be set to weight
@@ -177,15 +172,14 @@ class ABCBase:
         return dist
 
     def batches(self, n_samples, n_jobs, seed, force_equal=False):
-        """Divide and conquer.
+        r"""Divide and conquer.
 
         Divide the number of samples, ``n_samples``, between ``n_jobs`` workers.
         If the ABC algorithm uses Markov chains, then ``n_jobs`` is the number
         chains. If ``n_jobs`` exceeds the number of available CPUs found by
-        ``Pathos`` (this might include hardware threads), ``n_jobs`` is set to
-        the number found by ``Pathos``.
-
         `Pathos <https://pathos.readthedocs.io/en/latest/pathos.html>`_
+        (this might include hardware threads), ``n_jobs`` is set to the number
+        found by `Pathos <https://pathos.readthedocs.io/en/latest/pathos.html>`_.
 
         The method also creates a seed for each worker based on the input seed.
         This ensures reproducibility if wanted. If ``seed=None``, the results
@@ -203,8 +197,10 @@ class ABCBase:
             Number of (posterior) samples to draw.
         n_jobs : `int`
             Number of processes (workers). If ``n_jobs=-1``, then ``n_jobs`` is
-            set to half of the CPUs found by ``Pathos`` (we assume half of the
-            CPUs are hardware threads only and ignore those).
+            set to half of the CPUs found by
+            `Pathos <https://pathos.readthedocs.io/en/latest/pathos.html>`_
+            (we assume half of the CPUs are hardware threads only and ignore
+            those).
         seed : `int`
             User-provided seed.
         force_equal : `bool`, optional
@@ -253,22 +249,22 @@ class ABCBase:
         n_jobs=-1,
         seed=None,
     ):
-        """Perform pilot study.
+        r"""Perform pilot study.
 
-        The pilot study runs the simulator `n_sim` times and sets the
-        threshold parameter `epsilon` automatically as the q-quantile of
-        simulated distances. For instance, the 0.5-quantile (the median)
-        will give a threshold that accepts roughly (because the threshold
-        will be an estimate) 50% of the simulations.
+        The pilot study runs the simulator ``n_sim`` times and sets the
+        threshold parameter ``epsilon`` automatically as the q-quantile of
+        simulated distances from the prior predictive distribution. For
+        instance, the 0.5-quantile (the median) will give a threshold that
+        accepts 50% of the simulations.
 
         The pilot study can also be used to provide an estimate of the
-        `stat_scale` parameter, used in the weighted Euclidean distance, from
-        the prior predictive distribution by passing the `stat_scale` keyword as
-        `sd` or `mad`. The `stat_scale` parameter is used to avoid dominance
-        of particular summary statistics. `stat_scale=sd` scales the summary
-        statistics according to their standard deviation (SD) estimated from
-        the prior predictive samples, and `stat_scale=mad` according to their
-        median absolute deviation (MAD).
+        ``stat_scale`` parameter, used in the weighted Euclidean distance, from
+        the prior predictive distribution by passing the ``stat_scale`` keyword
+        as ``sd`` or ``mad``. The ``stat_scale`` parameter is used to avoid
+        dominance of particular summary statistics. ``stat_scale=sd`` scales the
+        summary statistics according to their standard deviation (SD) estimated
+        from the prior predictive samples, and ``stat_scale=mad`` according to
+        their median absolute deviation (MAD).
 
         It is important to note that if more than 50% of the prior predictive
         samples for a particular summary statistic have identical values, MAD
@@ -281,23 +277,25 @@ class ABCBase:
 
         Parameters
         ----------
-        n_sims : :obj:`int`, optional
+        n_sims : `int`, optional
             Number of simulator runs.
-        quantile : :obj:`int`
+        quantile : `int`
             Quantile of the Euclidean distances.
-        stat_scale : :obj:`str`, optional
-            Summary statistics scale to estimate; can be set as either `'sd'`
-            (standard deviation)  or `'mad'` (median absolute deviation).
-            If `None`, scale is set to `1.`. Default: `None`.
-        stat_weight : {:obj:`int`, :obj:`float`}, :term:`ndarray`, optional
-                Importance weights of summary statistics. Default: `1.`.
-        n_jobs : :obj:`int`, optional
-            Number of processes (workers). If `n_jobs=-1`, then `n_jobs` is
-            set to half of the CPUs found by `Pathos` (we assume half of the
-            CPUs are hardware threads only and ignore those). Default: `-1`.
-        seed : :obj:`int`
+        stat_scale : `str`, optional
+            Summary statistics scale to estimate; can be set as either ``sd``
+            (standard deviation)  or ``mad`` (median absolute deviation).
+            If ``None``, scale is set to ``1.0``. Default: ``None``.
+        stat_weight : {`int`, `float`}, `numpy.ndarray`, optional
+                Importance weights of summary statistics. Default: ``1.0``.
+        n_jobs : `int`, optional
+            Number of processes (workers). If ``n_jobs=-1``, then ``n_jobs`` is
+            set to half of the CPUs found by
+            `Pathos <https://pathos.readthedocs.io/en/latest/pathos.html>`_
+            (we assume half of the CPUs are hardware threads only and ignore
+            those). Default: ``-1``.
+        seed : `int`
             User-provided seed. Will be used to generate seed for each
-            worker. Default: `None`.
+            worker. Default: ``None``.
         """
 
         if quantile is None:
@@ -461,7 +459,7 @@ class ABCBase:
         kernel='epkov',
         return_journal=False
     ):
-        """Post-sampling regression adjustment.
+        r"""Post-sampling regression adjustment.
 
         Regresses summary statistics on the obtained posterior samples, and
         corrects the posterior samples for the trend in the relationship.
@@ -480,21 +478,21 @@ class ABCBase:
 
         Parameters
         ----------
-        method : :obj:`str`, optional
+        method : `str`, optional
             The regression method to use:
-                * `linear`: ordinary least squares regression;
-                * `loclinar`: local linear regression (default).
-        transform : :obj:`bool`, optional
-            If `True`, parameters are regressed on a logarithm scale. A log
+                * ``linear``: ordinary least squares regression;
+                * ``loclinar``: local linear regression (default).
+        transform : `bool`, optional
+            If ``True``, parameters are regressed on a logarithm scale. A log
             transformation will both stabilize the variance of the regression
             model and make it more homoscedastic. Note that the parameters must
-            be positive in order to do a log transform. Default: `True`.
-        kernel : :obj:`str`, optional
+            be positive in order to do a log transform. Default: ``True``.
+        kernel : `str`, optional
             The smoothing kernel function to use in local regression:
-                * `gaussian`: Gaussian smoothing kernel;
-                * `epkov`: Epanechnikov smoothing kernel.
+                * ``gaussian``: Gaussian smoothing kernel;
+                * ``epkov``: Epanechnikov smoothing kernel.
         return_journal : :obj:`bool`, optional
-            If `True`, journal is returned. Default: `False`.
+            If ``True``, `.Journal` is returned. Default: ``False``.
         """
 
         if not self._done_sampling:
@@ -513,14 +511,6 @@ class ABCBase:
         if self._log:
             self.logger.info(f"Perform {method} regression adjustment.")
 
-        # data (design matrix)
-        '''
-        X = copy.deepcopy(self._sum_stats)
-        #X /= self._stat_scale
-
-        self._factor = self._stat_weight / self._stat_scale
-        X *= self._factor
-        '''
         self._factor = self._stat_weight / self._stat_scale
 
         ssim = copy.deepcopy(self._sum_stats) * self._factor
@@ -551,12 +541,10 @@ class ABCBase:
 
     def _gaussian_kernel(self, d, h):
         """Gaussian smoothing kernel function"""
-        # return 1 / (h * np.sqrt(2 * np.pi)) * np.exp(-0.5 * (d * d) / (h * h))
         return np.exp(-0.5 * (d * d) / (h * h))
 
     def _epkov_kernel(self, d, h):
         """Epanechnikov smoothing kernel function"""
-        # return 0.75 / h * (1.0 - (d * d) / (h * h)) * (d < h)
         return (1.0 - (d * d) / (h * h)) * (d < h)
 
     def _lra(self, X, y):
@@ -568,8 +556,9 @@ class ABCBase:
         beta = coef[1:]
 
         # Adjust posterior samples
-        correction = ((self._sum_stats / self._stat_scale) -
-                      (self._obs_sumstat / self._stat_scale)) @ beta
+        s_sim = self._sum_stats * self._factor
+        s_obs = self._obs_sumstat * self._factor
+        correction = (s_sim - s_obs) @ beta
 
         if self._transform:
             self._samples = np.exp(np.log(self._original_samples) - correction)
@@ -598,25 +587,9 @@ class ABCBase:
         beta = coef[1:]
 
         # Adjust posterior samples
-        '''
-        correction = ((self._sum_stats / self._stat_scale) -
-                      (self._obs_sumstat / self._stat_scale)) @ beta
-        '''
-
         s_sim = self._sum_stats * self._factor
         s_obs = self._obs_sumstat * self._factor
-
-        #s_sim = self._sum_stats
-        #s_obs = self._obs_sumstat
         correction = (s_sim - s_obs) @ beta
-
-        ####################
-        # REMOVE THESE LINES AFTER DEBUG
-        #alpha_exp = np.exp(alpha)
-        # print(f"{alpha=}")
-        # print(f"{alpha_exp=}")
-        ###########
-        ###########
 
         if self._transform:
             self._samples = np.exp(np.log(self._original_samples) - correction)
@@ -625,6 +598,12 @@ class ABCBase:
 
     @property
     def epsilon(self):
+        r"""Tolerance parameter.
+
+        Returns
+        -------
+        `float`
+        """
         try:
             return self._epsilon
         except AttributeError:
@@ -634,6 +613,12 @@ class ABCBase:
 
     @property
     def quantile(self):
+        r"""The chosen q-quantile.
+
+        Returns
+        -------
+        `float`
+        """
         try:
             return self._quantile
         except AttributeError:
@@ -643,6 +628,12 @@ class ABCBase:
 
     @property
     def stat_scale(self):
+        r"""The summary statistic scales.
+
+        Returns
+        -------
+        `numpy.ndarray`
+        """
         try:
             return self._stat_scale
         except AttributeError:
