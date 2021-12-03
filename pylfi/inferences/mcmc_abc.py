@@ -15,7 +15,7 @@ from tqdm.auto import tqdm
 
 
 class MCMCABC(ABCBase):
-    """Class implementing the rejection ABC algorithm.
+    """Class implementing the MCMC ABC algorithm.
     """
 
     def __init__(
